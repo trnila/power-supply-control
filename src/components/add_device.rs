@@ -7,7 +7,7 @@ use dioxus::{
 };
 use serialport::UsbPortInfo;
 
-use crate::config::{AppConfig, ChannelConfig, PowerSupplyConfig};
+use crate::config::{AppConfig, ChannelConfig, MultiOn, PowerSupplyConfig};
 
 fn format_usb_port(port: &UsbPortInfo) -> String {
     [
@@ -65,7 +65,11 @@ pub fn AddDeviceComponent() -> Element {
                         ChannelConfig{
                             name: format!("Channel {ch}"),
                             voltage: 0.0,
-                            current: 0.0
+                            current: 0.0,
+                            multi_on: MultiOn {
+                                enabled: true,
+                                delay_ms: 0,
+                            }
                         }
                     }).collect(),
                 });

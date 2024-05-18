@@ -34,6 +34,12 @@ impl From<std::io::Error> for OpenError {
     }
 }
 
+#[derive(Debug)]
+pub enum MultiChannelOn {
+    Disabled,
+    Delay(u32),
+}
+
 pub struct Mx100qp {
     pub protocol: Framed<SerialStream, LineCodec>,
 }
@@ -92,6 +98,30 @@ impl Mx100qp {
 
     pub async fn all_channel_off(&mut self) -> Result<(), std::io::Error> {
         self.protocol.send("OPALL 0".to_string()).await
+    }
+
+    pub async fn multichannel_on_setup(
+        &mut self,
+        ch: u8,
+        behaviour: MultiChannelOn,
+    ) -> Result<(), std::io::Error> {
+        let action = match behaviour {
+            MultiChannelOn::Disabled => "NEVER",
+            MultiChannelOn::Delay(0) => "QUICK",
+            MultiChannelOn::Delay(_) => "DELAY",
+        };
+
+        self.protocol
+            .send(format!("ONACTION{} {action}", ch + 1))
+            .await?;
+
+        if let MultiChannelOn::Delay(delay) = behaviour {
+            self.protocol
+                .send(format!("ONDELAY{} {delay}", ch + 1))
+                .await?;
+        }
+
+        Ok(())
     }
 }
 

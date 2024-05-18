@@ -1,8 +1,11 @@
 use std::time::Duration;
 
+use crate::components::channel_delay::ChannelDelayComponent;
 use crate::config::AppConfig;
+use crate::config::MultiOn;
 use crate::mx100qp::read_channels;
 use crate::mx100qp::Channel;
+use crate::mx100qp::MultiChannelOn;
 use crate::mx100qp::Mx100qp;
 use dioxus::prelude::*;
 use futures::StreamExt;
@@ -24,6 +27,7 @@ pub enum PowerSupplyAction {
     SetVoltage(u8, f32),
     SetCurrent(u8, f32),
     RenameChannel(u8, String),
+    SetMultiChannel(u8, MultiChannelOn),
 }
 
 struct PowerSupply {
@@ -58,6 +62,19 @@ pub fn PowerSupplyComponent(id: String) -> Element {
             let mut port = port.unwrap();
             state.write().connected = true;
 
+            for ch in 0..=3 {
+                let multi_on = &config.channels[ch as usize].multi_on;
+                port.multichannel_on_setup(
+                    ch,
+                    match multi_on.enabled {
+                        true => MultiChannelOn::Delay(multi_on.delay_ms),
+                        false => MultiChannelOn::Disabled,
+                    },
+                )
+                .await
+                .unwrap();
+            }
+
             loop {
                 if let Ok(Some(msg)) =
                     tokio::time::timeout(Duration::from_millis(100), rx.next()).await
@@ -90,6 +107,29 @@ pub fn PowerSupplyComponent(id: String) -> Element {
                                 .clone_from(&new_name);
                             appconfig.write().save();
                             Ok(())
+                        }
+                        PowerSupplyAction::SetMultiChannel(channel, behaviour) => {
+                            match behaviour {
+                                MultiChannelOn::Disabled => {
+                                    appconfig
+                                        .write()
+                                        .power_supply_channel(&id, channel)
+                                        .multi_on
+                                        .enabled = false;
+                                }
+                                MultiChannelOn::Delay(delay_ms) => {
+                                    appconfig
+                                        .write()
+                                        .power_supply_channel(&id, channel)
+                                        .multi_on = MultiOn {
+                                        enabled: true,
+                                        delay_ms,
+                                    };
+                                }
+                            };
+                            appconfig.write().save();
+
+                            port.multichannel_on_setup(channel, behaviour).await
                         }
                     };
 
@@ -124,12 +164,17 @@ pub fn PowerSupplyComponent(id: String) -> Element {
                 }
                 if state.read().connected {
                     div {
-                        class: "btn-group",
-                        button {
-                            disabled: true,
-                            opacity: "1.0",
-                            class: "btn btn-sm",
-                            "Multi"
+                        class: "input-group input-group-sm w-auto",
+                        span {
+                            class: "input-group-text",
+                            "Delayed MultiON"
+                        }
+                        for (channel, channel_conf) in channels.iter().enumerate() {
+                            ChannelDelayComponent{
+                                channel: channel as u8,
+                                enabled: channel_conf.multi_on.enabled,
+                                delay_ms: channel_conf.multi_on.delay_ms
+                            }
                         }
                         button {
                             class: "btn btn-sm btn-success",

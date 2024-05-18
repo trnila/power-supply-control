@@ -46,10 +46,18 @@ impl AppConfig {
 }
 
 #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
+pub struct MultiOn {
+    pub enabled: bool,
+    pub delay_ms: u32,
+}
+
+#[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
 pub struct ChannelConfig {
     pub name: String,
     pub voltage: f32,
     pub current: f32,
+    #[serde(default)]
+    pub multi_on: MultiOn,
 }
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
@@ -66,4 +74,13 @@ pub struct PowerSupplyConfig {
 pub struct Config {
     #[serde(default)]
     pub power_supplies: Vec<PowerSupplyConfig>,
+}
+
+impl Default for MultiOn {
+    fn default() -> Self {
+        Self {
+            enabled: true,
+            delay_ms: 0,
+        }
+    }
 }
