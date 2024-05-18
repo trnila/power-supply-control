@@ -13,6 +13,15 @@ pub fn ChannelComponent(channel: Channel, config: ChannelConfig) -> Element {
     let power_supply_action = use_coroutine_handle::<PowerSupplyAction>();
     let card_class = if channel.enabled { "success" } else { "danger" };
 
+    let mut errors = Vec::new();
+    if channel.voltage.set != config.voltage {
+        errors.push(format!("{:.3} V is set!", channel.voltage.set));
+    }
+
+    if channel.current.set != config.current {
+        errors.push(format!("{:.3} A is set!", channel.current.set));
+    }
+
     rsx! {
         div {
             class: "card flex-fill",
@@ -44,20 +53,6 @@ pub fn ChannelComponent(channel: Channel, config: ChannelConfig) -> Element {
             }
             div {
                 class: "card-body",
-                if channel.current.set != config.current {
-                    div {
-                        class: "text-danger",
-                        "Configured current limit {config.current:.3} A differs to device {channel.current.set:.3} A"
-                    }
-                }
-
-                if channel.voltage.set != config.voltage {
-                    div {
-                        class: "text-danger",
-                        "Configured Voltage limit {config.voltage:.3} V differs to device {channel.voltage.set:.3} V"
-                    }
-                }
-
                 div {class: "text-end", "{channel.voltage.current:.3} V"}
                 div {class: "text-end", "{channel.current.current:.3} A"}
                 form {
@@ -107,6 +102,19 @@ pub fn ChannelComponent(channel: Channel, config: ChannelConfig) -> Element {
                     button {
                         class: "btn btn-sm btn-outline-secondary",
                         "Set"
+                    }
+                }
+                if !errors.is_empty() {
+                    div {
+                        class: "alert alert-danger mt-1 p-0 mb-0",
+                        ul {
+                            class: "mt-1 mb-1",
+                            for error in errors {
+                                li {
+                                    {error}
+                                }
+                            }
+                        }
                     }
                 }
             }
