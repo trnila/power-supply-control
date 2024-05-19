@@ -31,6 +31,7 @@ pub enum PowerSupplyAction {
     SetMultiChannel(u8, MultiChannelOn),
     SetVRange(u8, u8),
     SetAutoVRange(u8, bool),
+    SetVoltageTracking(u8),
 }
 
 struct PowerSupply {
@@ -49,8 +50,11 @@ pub fn PowerSupplyComponent(id: String) -> Element {
         connected: false,
     });
 
+    let voltage_tracking = config.voltage_tracking;
     let id1 = id.clone();
     let channels = config.channels.clone();
+
+    let voltage_trackings = ["V1 V2 V3 V4", "V1=V2 V3 V4", "V1 V2 V3=V4", "V1=V2 V3=V4"];
 
     let sync_task = use_coroutine(|mut rx: UnboundedReceiver<PowerSupplyAction>| async move {
         loop {
@@ -171,6 +175,11 @@ pub fn PowerSupplyComponent(id: String) -> Element {
                             appconfig.write().save();
                             Ok(())
                         }
+                        PowerSupplyAction::SetVoltageTracking(config) => {
+                            appconfig.write().power_supply(&id).voltage_tracking = config;
+                            appconfig.write().save();
+                            port.set_voltage_tracking(config).await
+                        }
                     };
 
                     if let Err(err) = res {
@@ -204,6 +213,22 @@ pub fn PowerSupplyComponent(id: String) -> Element {
                 }
                 if state.read().connected {
                     div {
+                        class: "d-flex gap-1",
+                    select {
+                        class: "form-control form-control-sm w-auto",
+                        onchange: move |evt| {
+                            sync_task.send(PowerSupplyAction::SetVoltageTracking(evt.data.value().parse().unwrap()))
+                        },
+                        for (i, label) in voltage_trackings.iter().enumerate() {
+                            option {
+                                value: "{i}",
+                                selected: voltage_tracking == i as u8,
+                                {label}
+                            }
+                        }
+                    }
+
+                    div {
                         class: "input-group input-group-sm w-auto",
                         span {
                             class: "input-group-text",
@@ -227,6 +252,7 @@ pub fn PowerSupplyComponent(id: String) -> Element {
                             "OFF"
                         },
                     }
+                }
                 }
             }
             if state.read().connected {

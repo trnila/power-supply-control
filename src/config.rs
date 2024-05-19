@@ -72,6 +72,8 @@ pub struct PowerSupplyConfig {
     pub id: String,
     pub name: String,
     pub channels: Vec<ChannelConfig>,
+    #[serde(default = "zero")]
+    pub voltage_tracking: u8,
 }
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
@@ -82,6 +84,10 @@ pub struct Config {
 
 fn one() -> u8 {
     1
+}
+
+fn zero() -> u8 {
+    0
 }
 
 fn def_true() -> bool {

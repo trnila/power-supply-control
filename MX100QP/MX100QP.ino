@@ -1,6 +1,7 @@
 #include <avr/boot.h>
 
 #define CHANNELS 4
+#define VOLTAGE_TRACKINGS 4
 
 enum OnAction {
   Quick,
@@ -34,9 +35,22 @@ Range range_limits[][4] = {
   }
 };
 uint8_t ranges[] = {1, 1, 1, 1};
+uint8_t voltage_tracking = 0;
 
 void setup() {
   Serial.begin(9600);
+}
+
+int master_index(int ch) {
+  if((voltage_tracking == 1 || voltage_tracking == 3) && ch == 1) {
+    return 0;
+  }
+
+  if((voltage_tracking == 2 || voltage_tracking == 3) && ch == 3) {
+    return 2;
+  }
+
+  return ch;
 }
 
 void loop() {
@@ -79,18 +93,27 @@ void loop() {
           ranges[ch] = vrange;
         }
       }
+    } else if(i.startsWith("CONFIG")) {
+      if(i[4] == '?') {
+        Serial.println(voltage_tracking);
+      } else {
+        int n = i[7] - '0';
+        if(n < VOLTAGE_TRACKINGS) {
+          voltage_tracking = n;
+        }
+      }
     } else if(i[0] == 'V') {
       int n = (i[1] - '0') - 1;
       if(n < CHANNELS) {
         if(i[2] == 'O' && i[3] == '?') {
-          float val = active[n] * (V[n] + random(-100, 100) / 100.0);
+          float val = active[n] * (V[master_index(n)] + random(-100, 100) / 100.0);
           Serial.print(val, 3);
           Serial.println("V");
         } else if(i[2] == '?') {
           Serial.print("V");
           Serial.print((char) (n + 1 + '0'));
           Serial.print(' ');
-          Serial.println(V[n], 3);
+          Serial.println(V[master_index(n)], 3);
         } else if(i[2] == ' ') {
           float req = atof(i.substring(3).c_str());
           if(req <= range_limits[n >> 1][ranges[n]].voltage) {
@@ -102,14 +125,14 @@ void loop() {
       int n = (i[1] - '0') - 1;
       if(n < CHANNELS) {
         if(i[2] == 'O' && i[3] == '?') {
-          float val = active[n] * (I[n] + random(-100, 100) / 100.0);
+          float val = active[n] * (I[master_index(n)] + random(-100, 100) / 100.0);
           Serial.print(val, 3);
           Serial.println("I");
         } else if(i[2] == '?') {
           Serial.print("I");
           Serial.print((char) (n + 1 + '0'));
           Serial.print(' ');
-          Serial.println(I[n], 3);
+          Serial.println(I[master_index(n)], 3);
         } else if(i[2] == ' ') {
           float req = atof(i.substring(3).c_str());
           if(req <= range_limits[n >> 1][ranges[n]].current) {

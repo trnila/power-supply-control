@@ -189,6 +189,10 @@ impl Mx100qp {
             .send(format!("VRANGE{} {vrange}", ch + 1))
             .await
     }
+
+    pub async fn set_voltage_tracking(&mut self, config: u8) -> Result<(), std::io::Error> {
+        self.protocol.send(format!("CONFIG {config}")).await
+    }
 }
 
 fn find_usb(config: &PowerSupplyConfig) -> Option<String> {

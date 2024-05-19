@@ -61,6 +61,7 @@ pub fn AddDeviceComponent() -> Element {
                     serial_number: port.serial_number.clone(),
                     id: port.serial_number.clone().unwrap(),
                     name: "Power Supply MX100QP".to_string(),
+                    voltage_tracking: 0,
                     channels: (1..=4).map(|ch| {
                         ChannelConfig{
                             name: format!("Channel {ch}"),
