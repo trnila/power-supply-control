@@ -1,6 +1,7 @@
 use std::{fmt::Write, io};
 
 use bytes::BytesMut;
+use log::trace;
 use tokio_util::codec::{Decoder, Encoder};
 
 pub struct LineCodec;
@@ -14,7 +15,11 @@ impl Decoder for LineCodec {
         if let Some(n) = newline {
             let line = src.split_to(n + 1);
             return match std::str::from_utf8(line.as_ref()) {
-                Ok(s) => Ok(Some(s.trim().to_string())),
+                Ok(s) => {
+                    let received = s.trim().to_string();
+                    trace!("Received {received}");
+                    Ok(Some(received))
+                }
                 Err(_) => Err(io::Error::new(io::ErrorKind::Other, "Invalid String")),
             };
         }
@@ -28,6 +33,7 @@ impl Encoder<String> for LineCodec {
     fn encode(&mut self, _item: String, _dst: &mut BytesMut) -> Result<(), Self::Error> {
         _dst.write_str(&_item).unwrap();
         _dst.write_char('\n').unwrap();
+        trace!("Sending {_item}");
         Ok(())
     }
 }
