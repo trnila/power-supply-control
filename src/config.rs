@@ -58,6 +58,10 @@ pub struct ChannelConfig {
     pub current: f32,
     #[serde(default)]
     pub multi_on: MultiOn,
+    #[serde(default = "one")]
+    pub vrange: u8,
+    #[serde(default = "def_true")]
+    pub auto_vrange: bool,
 }
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
@@ -74,6 +78,14 @@ pub struct PowerSupplyConfig {
 pub struct Config {
     #[serde(default)]
     pub power_supplies: Vec<PowerSupplyConfig>,
+}
+
+fn one() -> u8 {
+    1
+}
+
+fn def_true() -> bool {
+    true
 }
 
 impl Default for MultiOn {

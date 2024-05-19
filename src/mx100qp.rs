@@ -44,6 +44,66 @@ pub struct Mx100qp {
     pub protocol: Framed<SerialStream, LineCodec>,
 }
 
+pub struct VRange {
+    pub voltage: f32,
+    pub current: f32,
+}
+
+impl std::fmt::Display for VRange {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}V/{}A", self.voltage, self.current)
+    }
+}
+
+const RANGE_A: [VRange; 4] = [
+    VRange {
+        voltage: 0.0,
+        current: 0.0,
+    },
+    VRange {
+        voltage: 35.0,
+        current: 3.0,
+    },
+    VRange {
+        voltage: 16.0,
+        current: 6.0,
+    },
+    VRange {
+        voltage: 35.0,
+        current: 6.0,
+    },
+];
+
+const RANGE_B: [VRange; 4] = [
+    VRange {
+        voltage: 0.0,
+        current: 0.0,
+    },
+    VRange {
+        voltage: 35.0,
+        current: 3.0,
+    },
+    VRange {
+        voltage: 70.0,
+        current: 1.5,
+    },
+    VRange {
+        voltage: 70.0,
+        current: 3.0,
+    },
+];
+
+pub const VRANGES: [[VRange; 4]; 4] = [RANGE_A, RANGE_A, RANGE_B, RANGE_B];
+
+pub fn auto_vrange(ch: u8, voltage: f32, current: f32) -> Option<u8> {
+    for (index, vrange) in VRANGES[ch as usize].iter().enumerate() {
+        if voltage < vrange.voltage && current < vrange.current {
+            return Some(index as u8);
+        }
+    }
+    None
+}
+
 impl Mx100qp {
     pub async fn open(config: &PowerSupplyConfig) -> Result<Self, OpenError> {
         let port_path = find_usb(config).ok_or(OpenError::NoDeviceFound)?;
@@ -123,6 +183,12 @@ impl Mx100qp {
 
         Ok(())
     }
+
+    pub async fn set_vrange(&mut self, ch: u8, vrange: u8) -> Result<(), std::io::Error> {
+        self.protocol
+            .send(format!("VRANGE{} {vrange}", ch + 1))
+            .await
+    }
 }
 
 fn find_usb(config: &PowerSupplyConfig) -> Option<String> {
@@ -150,6 +216,7 @@ pub struct Unit {
 #[derive(Debug, Clone, PartialEq, PartialOrd)]
 pub struct Channel {
     pub index: u8,
+    pub vrange: u8,
     pub enabled: bool,
     pub current: Unit,
     pub voltage: Unit,
@@ -163,8 +230,12 @@ pub async fn read_channels(
         reader.send(format!("OP{i}?")).await?;
         let enabled = reader.next().await.unwrap()? == "1";
 
+        reader.send(format!("VRANGE{i}?")).await?;
+        let vrange = reader.next().await.unwrap()?.parse().unwrap();
+
         mychannels.push(Channel {
             enabled,
+            vrange,
             index: i - 1,
             voltage: read_unit(reader, i, 'V').await?,
             current: read_unit(reader, i, 'I').await?,

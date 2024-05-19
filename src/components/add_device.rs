@@ -66,10 +66,12 @@ pub fn AddDeviceComponent() -> Element {
                             name: format!("Channel {ch}"),
                             voltage: 0.0,
                             current: 0.0,
+                            vrange: 1,
+                            auto_vrange: true,
                             multi_on: MultiOn {
                                 enabled: true,
                                 delay_ms: 0,
-                            }
+                            },
                         }
                     }).collect(),
                 });

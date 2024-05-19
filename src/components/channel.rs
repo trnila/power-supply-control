@@ -5,7 +5,7 @@ use crate::{
         power_supply::{ChannelSelection, PowerSupplyAction},
     },
     config::ChannelConfig,
-    mx100qp::Channel,
+    mx100qp::{Channel, VRANGES},
 };
 use dioxus::prelude::*;
 
@@ -21,6 +21,10 @@ pub fn ChannelComponent(channel: Channel, config: ChannelConfig) -> Element {
 
     if channel.current.set != config.current {
         errors.push(format!("{:.3} A is set!", channel.current.set));
+    }
+
+    if channel.vrange != config.vrange {
+        errors.push("Different VRange is set!".to_string());
     }
 
     rsx! {
@@ -81,6 +85,39 @@ pub fn ChannelComponent(channel: Channel, config: ChannelConfig) -> Element {
                         }
                     },
                 }
+
+                div {
+                    class: "input-group input-group-sm",
+                    span {
+                        class: "input-group-text form-switch",
+                        "Auto VRANGE"
+
+                        input {
+                            r#type: "checkbox",
+                            class: "form-check-input ms-1",
+                            checked: config.auto_vrange,
+                            onchange: move |evt| {
+                                power_supply_action.send(PowerSupplyAction::SetAutoVRange(channel.index, evt.data.value().parse::<bool>().unwrap()));
+                            }
+                        }
+                    }
+
+                    select {
+                        class: "form-control form-control-sm",
+                        disabled: config.auto_vrange,
+                        onchange: move |evt| {
+                            power_supply_action.send(PowerSupplyAction::SetVRange(channel.index, evt.data.value().parse().unwrap()));
+                        },
+                        for (i, range) in VRANGES[channel.index as usize].iter().enumerate() {
+                            option {
+                                selected: config.vrange as usize == i,
+                                value: "{i}",
+                                "{range}"
+                            }
+                        }
+                    }
+                }
+
                 if !errors.is_empty() {
                     div {
                         class: "alert alert-danger mt-1 p-0 mb-0",

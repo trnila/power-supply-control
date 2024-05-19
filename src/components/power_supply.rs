@@ -3,6 +3,7 @@ use std::time::Duration;
 use crate::components::channel_delay::ChannelDelayComponent;
 use crate::config::AppConfig;
 use crate::config::MultiOn;
+use crate::mx100qp::auto_vrange;
 use crate::mx100qp::read_channels;
 use crate::mx100qp::Channel;
 use crate::mx100qp::MultiChannelOn;
@@ -28,6 +29,8 @@ pub enum PowerSupplyAction {
     SetCurrent(u8, f32),
     RenameChannel(u8, String),
     SetMultiChannel(u8, MultiChannelOn),
+    SetVRange(u8, u8),
+    SetAutoVRange(u8, bool),
 }
 
 struct PowerSupply {
@@ -90,13 +93,37 @@ pub fn PowerSupplyComponent(id: String) -> Element {
                             ChannelSelection::Channel(ch) => port.channel_off(ch).await,
                         },
                         PowerSupplyAction::SetVoltage(ch, new_voltage) => {
-                            appconfig.write().power_supply_channel(&id, ch).voltage = new_voltage;
-                            appconfig.write().save();
+                            let mut conf = appconfig.write();
+                            let channel_conf = &mut conf.power_supply_channel(&id, ch);
+                            channel_conf.voltage = new_voltage;
+
+                            if channel_conf.auto_vrange {
+                                if let Some(vrange) =
+                                    auto_vrange(ch, channel_conf.voltage, channel_conf.current)
+                                {
+                                    channel_conf.vrange = vrange;
+                                    port.set_vrange(ch, channel_conf.vrange).await.unwrap();
+                                }
+                            }
+
+                            conf.save();
                             port.set_voltage(ch, new_voltage).await
                         }
                         PowerSupplyAction::SetCurrent(ch, new_current) => {
-                            appconfig.write().power_supply_channel(&id, ch).current = new_current;
-                            appconfig.write().save();
+                            let mut conf = appconfig.write();
+                            let channel_conf = &mut conf.power_supply_channel(&id, ch);
+                            channel_conf.current = new_current;
+
+                            if channel_conf.auto_vrange {
+                                if let Some(vrange) =
+                                    auto_vrange(ch, channel_conf.voltage, channel_conf.current)
+                                {
+                                    channel_conf.vrange = vrange;
+                                    port.set_vrange(ch, channel_conf.vrange).await.unwrap();
+                                }
+                            }
+
+                            conf.save();
                             port.set_current(ch, new_current).await
                         }
                         PowerSupplyAction::RenameChannel(ch, new_name) => {
@@ -130,6 +157,19 @@ pub fn PowerSupplyComponent(id: String) -> Element {
                             appconfig.write().save();
 
                             port.multichannel_on_setup(channel, behaviour).await
+                        }
+                        PowerSupplyAction::SetVRange(channel, vrange) => {
+                            appconfig.write().power_supply_channel(&id, channel).vrange = vrange;
+                            appconfig.write().save();
+                            port.set_vrange(channel, vrange).await
+                        }
+                        PowerSupplyAction::SetAutoVRange(channel, enable) => {
+                            appconfig
+                                .write()
+                                .power_supply_channel(&id, channel)
+                                .auto_vrange = enable;
+                            appconfig.write().save();
+                            Ok(())
                         }
                     };
 

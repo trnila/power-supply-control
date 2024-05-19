@@ -8,13 +8,32 @@ enum OnAction {
   Delay,
 };
 
+struct Range {
+   uint8_t voltage;
+   float current;
+};
+
 float V[] = {10, 20, 30, 40};
 float I[] = {1, 2, 3, 4};
 bool active[CHANNELS] = {true, true, true, true};
 OnAction onactions[CHANNELS] = {Quick, Quick, Quick, Quick};
 uint32_t onaction_delays[CHANNELS];
 int32_t channel_multi_on_at[CHANNELS] = {-1, -1, -1, -1};
-
+Range range_limits[][4] = {
+  {
+    {.voltage = 0, .current = 0},
+    {.voltage = 35, .current = 3},
+    {.voltage = 16, .current = 6},
+    {.voltage = 35, .current = 6},
+  },
+  {
+    {.voltage = 0, .current = 0},
+    {.voltage = 35, .current = 3},
+    {.voltage = 70, .current = 1.5},
+    {.voltage = 70, .current = 3},
+  }
+};
+uint8_t ranges[] = {1, 1, 1, 1};
 
 void setup() {
   Serial.begin(9600);
@@ -50,6 +69,16 @@ void loop() {
           active[ch] = false;
         }
       }
+    } else if(i.startsWith("VRANGE")) {
+      int ch = (i[6] - '0') - 1;
+      if(i[7] == '?') {
+        Serial.println(ranges[ch]);
+      } else {
+        int vrange = i[8] - '0';
+        if(vrange < 4) {
+          ranges[ch] = vrange;
+        }
+      }
     } else if(i[0] == 'V') {
       int n = (i[1] - '0') - 1;
       if(n < CHANNELS) {
@@ -63,7 +92,10 @@ void loop() {
           Serial.print(' ');
           Serial.println(V[n], 3);
         } else if(i[2] == ' ') {
-          V[n] = atof(i.substring(3).c_str());
+          float req = atof(i.substring(3).c_str());
+          if(req <= range_limits[n >> 1][ranges[n]].voltage) {
+            V[n] = req;
+          }
         }
       }
     } else if(i[0] == 'I') {
@@ -79,7 +111,10 @@ void loop() {
           Serial.print(' ');
           Serial.println(I[n], 3);
         } else if(i[2] == ' ') {
-          I[n] = atof(i.substring(3).c_str());
+          float req = atof(i.substring(3).c_str());
+          if(req <= range_limits[n >> 1][ranges[n]].current) {
+            I[n] = req;
+          }
         }
       }
     } else if(i[0] == 'O' && i[1] == 'P') {
