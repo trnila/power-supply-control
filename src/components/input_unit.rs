@@ -1,13 +1,24 @@
 use dioxus::prelude::*;
 
 #[component]
-pub fn InputUnitComponent(value: f32, unit: String, onsubmit: EventHandler<f32>) -> Element {
+pub fn InputUnitComponent(
+    value: f32,
+    unit: String,
+    onsubmit: EventHandler<f32>,
+    prepend: Option<String>,
+) -> Element {
     rsx! {
         form {
             class: "input-group input-group-sm mb-1",
             onsubmit: move |evt| {
                 onsubmit(evt.data.values()["value"].as_value().parse().unwrap());
             },
+            if let Some(prepend) = prepend {
+                span {
+                    class: "input-group-text",
+                    "{prepend}"
+                }
+            }
             input {
                 class: "form-control form-control-sm text-end",
                 r#type: "number",
