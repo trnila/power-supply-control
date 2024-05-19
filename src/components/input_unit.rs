@@ -9,14 +9,14 @@ pub fn InputUnitComponent(value: f32, unit: String, onsubmit: EventHandler<f32>)
                 onsubmit(evt.data.values()["value"].as_value().parse().unwrap());
             },
             input {
-                class: "form-control form-control-sm",
+                class: "form-control form-control-sm text-end",
                 r#type: "number",
                 step: 0.001,
                 name: "value",
                 value: "{value}",
             }
             span {
-                class: "input-group-text text-center",
+                class: "input-group-text",
                 width: "30px",
                 "{unit}"
             }
