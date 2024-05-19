@@ -1,6 +1,7 @@
 use crate::{
     components::{
         editable_text::EditableTextComponent,
+        input_unit::InputUnitComponent,
         power_supply::{ChannelSelection, PowerSupplyAction},
     },
     config::ChannelConfig,
@@ -55,54 +56,24 @@ pub fn ChannelComponent(channel: Channel, config: ChannelConfig) -> Element {
                 class: "card-body",
                 div {class: "text-end", "{channel.voltage.current:.3} V"}
                 div {class: "text-end", "{channel.current.current:.3} A"}
-                form {
-                    class: "input-group input-group-sm mb-1",
-                    onsubmit: move |event| {
-                        log::info!("Submitted! {event:?}");
+
+                InputUnitComponent{
+                    value: config.voltage,
+                    unit: "V",
+                    onsubmit: move |new_voltage| {
                         power_supply_action.send(
-                            PowerSupplyAction::SetVoltage(channel.index, event.data.values()["value"].as_value().parse().unwrap())
+                            PowerSupplyAction::SetVoltage(channel.index, new_voltage)
                         );
                     },
-                    input {
-                        class: "form-control form-control-sm",
-                        r#type: "number",
-                        step: 0.001,
-                        name: "value",
-                        value: "{config.voltage}",
-                    }
-                    span {
-                        class: "input-group-text text-center",
-                        width: "30px",
-                        "V"
-                    }
-                    button {
-                        class: "btn btn-sm btn-outline-secondary",
-                        "Set"
-                    }
                 }
-                form {
-                    class: "input-group input-group-sm",
-                    onsubmit: move |event| {
+                InputUnitComponent{
+                    value: config.current,
+                    unit: "A",
+                    onsubmit: move |new_current| {
                         power_supply_action.send(
-                            PowerSupplyAction::SetCurrent(channel.index, event.data.values()["value"].as_value().parse().unwrap())
+                            PowerSupplyAction::SetCurrent(channel.index, new_current)
                         );
                     },
-                    input {
-                        class: "form-control form-control-sm",
-                        r#type: "number",
-                        step: 0.001,
-                        name: "value",
-                        value: "{config.current}",
-                    }
-                    span {
-                        class: "input-group-text  text-center",
-                        width: "30px",
-                        "A"
-                    }
-                    button {
-                        class: "btn btn-sm btn-outline-secondary",
-                        "Set"
-                    }
                 }
                 if !errors.is_empty() {
                     div {
