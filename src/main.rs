@@ -69,7 +69,7 @@ fn main() {
                     WindowBuilder::new()
                         .with_maximized(false)
                         .with_title("Power supply control")
-                        .with_inner_size(LogicalSize::new(1024, 768)),
+                        .with_min_inner_size(LogicalSize::new(1280, 768)),
                 )
                 .with_menu(None)
                 .with_disable_context_menu(true),
