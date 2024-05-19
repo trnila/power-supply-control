@@ -12,7 +12,7 @@ pub struct AppConfig {
 impl AppConfig {
     pub fn load_from_file(path: PathBuf) -> Self {
         let data = match std::fs::read_to_string(&path) {
-            Ok(content) => toml::from_str(&content).unwrap(),
+            Ok(content) => serde_json::from_str(&content).unwrap(),
             Err(err) => {
                 warn!("Failed to load global config {:?}: {}", path, err);
                 Config {
@@ -37,7 +37,11 @@ impl AppConfig {
     }
 
     pub fn save(&mut self) {
-        std::fs::write(&self.path, toml::to_string(&self.data).unwrap()).unwrap();
+        std::fs::write(
+            &self.path,
+            serde_json::to_string_pretty(&self.data).unwrap(),
+        )
+        .unwrap();
     }
 }
 

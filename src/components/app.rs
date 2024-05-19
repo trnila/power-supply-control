@@ -9,7 +9,7 @@ use dioxus::prelude::*;
 pub fn AppComponent() -> Element {
     let config = use_context_provider(move || {
         Signal::new(AppConfig::load_from_file(
-            get_config_dir().join("config.toml"),
+            get_config_dir().join("config.json"),
         ))
     });
 

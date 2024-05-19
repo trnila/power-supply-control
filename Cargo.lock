@@ -3218,11 +3218,11 @@ dependencies = [
  "manganis",
  "serde",
  "serde_derive",
+ "serde_json",
  "serialport",
  "tokio",
  "tokio-serial",
  "tokio-util",
- "toml 0.8.12",
  "tracing",
  "vergen",
 ]
