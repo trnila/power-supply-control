@@ -62,6 +62,8 @@ pub struct ChannelConfig {
     pub vrange: u8,
     #[serde(default = "def_true")]
     pub auto_vrange: bool,
+    pub overvoltage_trip: Option<f32>,
+    pub overcurrent_trip: Option<f32>,
 }
 
 #[derive(Deserialize, Serialize, Debug, Clone)]

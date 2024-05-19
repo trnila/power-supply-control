@@ -69,6 +69,8 @@ pub fn AddDeviceComponent() -> Element {
                             current: 0.0,
                             vrange: 1,
                             auto_vrange: true,
+                            overcurrent_trip: None,
+                            overvoltage_trip: None,
                             multi_on: MultiOn {
                                 enabled: true,
                                 delay_ms: 0,

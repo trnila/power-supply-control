@@ -23,6 +23,20 @@ pub fn ChannelComponent(channel: Channel, config: ChannelConfig) -> Element {
         errors.push(format!("{:.3} A is set!", channel.current.set));
     }
 
+    if channel.overvoltage_trip != config.overvoltage_trip {
+        errors.push(match channel.overvoltage_trip {
+            None => "Overvoltage is disabled".to_string(),
+            Some(set) => format!("Overvoltage trip is set to {set:.3} V"),
+        });
+    }
+
+    if channel.overcurrent_trip != config.overcurrent_trip {
+        errors.push(match channel.overcurrent_trip {
+            None => "Overcurrent is disabled".to_string(),
+            Some(set) => format!("Overcurrent trip is set to {set:.3} A"),
+        });
+    }
+
     if channel.vrange != config.vrange {
         errors.push("Different VRange is set!".to_string());
     }
@@ -83,6 +97,29 @@ pub fn ChannelComponent(channel: Channel, config: ChannelConfig) -> Element {
                                 PowerSupplyAction::SetCurrent(channel.index, new_current)
                             );
                         }
+                    },
+                }
+                InputUnitComponent{
+                    value: config.overvoltage_trip,
+                    unit: "V",
+                    prepend: "Overvoltage trip",
+                    required: false,
+                    onsubmit: move |new_voltage| {
+                        power_supply_action.send(
+                            PowerSupplyAction::SetOvervoltageTrip(channel.index, new_voltage)
+                        );
+                    },
+                }
+
+                InputUnitComponent{
+                    value: config.overcurrent_trip,
+                    unit: "A",
+                    prepend: "Overcurrent trip",
+                    required: false,
+                    onsubmit: move |new_current| {
+                        power_supply_action.send(
+                            PowerSupplyAction::SetOvercurrentTrip(channel.index, new_current)
+                        );
                     },
                 }
 

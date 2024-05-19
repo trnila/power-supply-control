@@ -193,6 +193,43 @@ impl Mx100qp {
     pub async fn set_voltage_tracking(&mut self, config: u8) -> Result<(), std::io::Error> {
         self.protocol.send(format!("CONFIG {config}")).await
     }
+
+    pub async fn set_overvoltage_trip(
+        &mut self,
+        ch: u8,
+        voltage: Option<f32>,
+    ) -> Result<(), std::io::Error> {
+        self.set_trip(ch, voltage, 'V').await
+    }
+
+    pub async fn set_overcurrent_trip(
+        &mut self,
+        ch: u8,
+        current: Option<f32>,
+    ) -> Result<(), std::io::Error> {
+        self.set_trip(ch, current, 'C').await
+    }
+
+    pub async fn set_trip(
+        &mut self,
+        ch: u8,
+        threshold: Option<f32>,
+        unit: char,
+    ) -> Result<(), std::io::Error> {
+        if let Some(threshold) = threshold {
+            self.protocol
+                .send(format!("O{unit}P{} {threshold}", ch + 1))
+                .await?;
+        }
+
+        let action = match threshold {
+            None => "OFF",
+            Some(_) => "ON",
+        };
+        self.protocol
+            .send(format!("O{unit}P{} {action}", ch + 1))
+            .await
+    }
 }
 
 fn find_usb(config: &PowerSupplyConfig) -> Option<String> {
@@ -224,6 +261,8 @@ pub struct Channel {
     pub enabled: bool,
     pub current: Unit,
     pub voltage: Unit,
+    pub overvoltage_trip: Option<f32>,
+    pub overcurrent_trip: Option<f32>,
 }
 
 pub async fn read_channels(
@@ -237,10 +276,24 @@ pub async fn read_channels(
         reader.send(format!("VRANGE{i}?")).await?;
         let vrange = reader.next().await.unwrap()?.parse().unwrap();
 
+        reader.send(format!("OVP{}?", i)).await?;
+        let ovp = match reader.next().await.unwrap()?.split_once(' ').unwrap().1 {
+            "OFF" => None,
+            val => Some(val.parse().unwrap()),
+        };
+
+        reader.send(format!("OCP{}?", i)).await?;
+        let ocp = match reader.next().await.unwrap()?.split_once(' ').unwrap().1 {
+            "OFF" => None,
+            val => Some(val.parse().unwrap()),
+        };
+
         mychannels.push(Channel {
             enabled,
             vrange,
             index: i - 1,
+            overvoltage_trip: ovp,
+            overcurrent_trip: ocp,
             voltage: read_unit(reader, i, 'V').await?,
             current: read_unit(reader, i, 'I').await?,
         });

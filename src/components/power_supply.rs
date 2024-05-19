@@ -32,6 +32,8 @@ pub enum PowerSupplyAction {
     SetVRange(u8, u8),
     SetAutoVRange(u8, bool),
     SetVoltageTracking(u8),
+    SetOvervoltageTrip(u8, Option<f32>),
+    SetOvercurrentTrip(u8, Option<f32>),
 }
 
 struct PowerSupply {
@@ -179,6 +181,22 @@ pub fn PowerSupplyComponent(id: String) -> Element {
                             appconfig.write().power_supply(&id).voltage_tracking = config;
                             appconfig.write().save();
                             port.set_voltage_tracking(config).await
+                        }
+                        PowerSupplyAction::SetOvervoltageTrip(channel, voltage) => {
+                            appconfig
+                                .write()
+                                .power_supply_channel(&id, channel)
+                                .overvoltage_trip = voltage;
+                            appconfig.write().save();
+                            port.set_overvoltage_trip(channel, voltage).await
+                        }
+                        PowerSupplyAction::SetOvercurrentTrip(channel, current) => {
+                            appconfig
+                                .write()
+                                .power_supply_channel(&id, channel)
+                                .overcurrent_trip = current;
+                            appconfig.write().save();
+                            port.set_overcurrent_trip(channel, current).await
                         }
                     };
 

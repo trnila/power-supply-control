@@ -3,6 +3,9 @@
 #define CHANNELS 4
 #define VOLTAGE_TRACKINGS 4
 
+#define VOLTAGE_TRIP 0
+#define CURRENT_TRIP 1
+
 enum OnAction {
   Quick,
   Never,
@@ -36,6 +39,8 @@ Range range_limits[][4] = {
 };
 uint8_t ranges[] = {1, 1, 1, 1};
 uint8_t voltage_tracking = 0;
+float overtrip[2][CHANNELS] = {0, 0, 0, 0};
+bool overtrip_enabled[2][CHANNELS];
 
 void setup() {
   Serial.begin(9600);
@@ -54,10 +59,22 @@ int master_index(int ch) {
 }
 
 void loop() {
+  float V_out[CHANNELS];
+  float I_out[CHANNELS];
   for(int ch = 0; ch < CHANNELS; ch++) {
     if(onactions[ch] == Delay && channel_multi_on_at[ch] >= 0 && millis() >= channel_multi_on_at[ch]) {
       active[ch] = true;
       channel_multi_on_at[ch] = -1;
+    }
+
+    V_out[ch] = active[master_index(ch)] * (V[master_index(ch)] + random(-100, 100) / 100.0);
+    I_out[ch] = active[master_index(ch)] * (I[master_index(ch)] + random(-100, 100) / 100.0);
+
+    if(overtrip_enabled[VOLTAGE_TRIP][master_index(ch)] && V_out[master_index(ch)] >= overtrip[VOLTAGE_TRIP][master_index(ch)]) {
+      active[ch] = false;
+    }
+    if(overtrip_enabled[CURRENT_TRIP][master_index(ch)] && I_out[master_index(ch)] >= overtrip[CURRENT_TRIP][master_index(ch)]) {
+      active[ch] = false;
     }
   }
 
@@ -93,6 +110,28 @@ void loop() {
           ranges[ch] = vrange;
         }
       }
+    } else if(i[0] == 'O' && i[2] == 'P' && (i[1] == 'C' || i[1] == 'V')) {
+      bool trip_idx = i[1] == 'V' ? VOLTAGE_TRIP : CURRENT_TRIP;
+      int ch = (i[3] - '0') - 1;
+      if(ch < CHANNELS) {
+        if(i[4] == '?') {
+          Serial.print(i[1]);
+          Serial.print("P ");
+          if(overtrip_enabled[trip_idx][ch]) {
+            Serial.println(overtrip[trip_idx][ch]);
+          } else {
+            Serial.println("OFF");
+          }
+        } else {
+          if(i[6] == 'F') {
+            overtrip_enabled[trip_idx][ch] = false;
+          } else if(i[6] == 'N') {
+            overtrip_enabled[trip_idx][ch] = true;
+          } else {
+            overtrip[trip_idx][ch] = atof(i.substring(5).c_str());
+          }
+        }
+      }
     } else if(i.startsWith("CONFIG")) {
       if(i[4] == '?') {
         Serial.println(voltage_tracking);
@@ -106,8 +145,7 @@ void loop() {
       int n = (i[1] - '0') - 1;
       if(n < CHANNELS) {
         if(i[2] == 'O' && i[3] == '?') {
-          float val = active[n] * (V[master_index(n)] + random(-100, 100) / 100.0);
-          Serial.print(val, 3);
+          Serial.print(V_out[n], 3);
           Serial.println("V");
         } else if(i[2] == '?') {
           Serial.print("V");
@@ -125,8 +163,7 @@ void loop() {
       int n = (i[1] - '0') - 1;
       if(n < CHANNELS) {
         if(i[2] == 'O' && i[3] == '?') {
-          float val = active[n] * (I[master_index(n)] + random(-100, 100) / 100.0);
-          Serial.print(val, 3);
+          Serial.print(I_out[n], 3);
           Serial.println("I");
         } else if(i[2] == '?') {
           Serial.print("I");
