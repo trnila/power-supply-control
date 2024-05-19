@@ -22,19 +22,31 @@ fn format_usb_port(port: &UsbPortInfo) -> String {
     .join(", ")
 }
 
-fn scan_usb() -> Vec<UsbPortInfo> {
-    serialport::available_ports()
-        .unwrap()
-        .into_iter()
-        .filter_map(|p| match p.port_type {
-            serialport::SerialPortType::UsbPort(usbinfo) => Some(usbinfo),
-            _ => None,
-        })
-        .collect()
-}
-
 pub fn AddDeviceComponent() -> Element {
     let mut appconfig = use_context::<Signal<AppConfig>>();
+
+    let scan_usb = move || -> Vec<UsbPortInfo> {
+        serialport::available_ports()
+            .unwrap()
+            .into_iter()
+            .filter_map(|p| match p.port_type {
+                serialport::SerialPortType::UsbPort(usbinfo) => Some(usbinfo),
+                _ => None,
+            })
+            .filter(|p| {
+                for supply in appconfig.read().data.power_supply.iter() {
+                    if supply.vid == p.vid
+                        && supply.pid == p.pid
+                        && supply.serial_number == p.serial_number
+                    {
+                        return false;
+                    }
+                }
+                true
+            })
+            .collect()
+    };
+
     let mut ports = use_signal(scan_usb);
 
     rsx! {

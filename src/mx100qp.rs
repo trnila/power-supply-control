@@ -96,7 +96,8 @@ impl Mx100qp {
 }
 
 fn find_usb(config: &PowerSupplyConfig) -> Option<String> {
-    let ports = serialport::available_ports().expect("No ports found!");
+    let ports: Vec<serialport::SerialPortInfo> =
+        serialport::available_ports().expect("No ports found!");
     ports.iter().find_map(|p| {
         if let serialport::SerialPortType::UsbPort(usbinfo) = &p.port_type {
             if config.pid == usbinfo.pid
