@@ -2,11 +2,9 @@
 Power supply control GUI for AIM-TTI MX100QP over USB UART.
 
 
-## Build
+## Build & Run
 ```shell-session
-$ cargo install dioxus-cli
-$ dx serve
-$ dx build --profile release
+$ cargo run
 ```
 
 ## Testing with arduino stub
