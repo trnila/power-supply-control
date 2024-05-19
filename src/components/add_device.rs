@@ -34,7 +34,7 @@ pub fn AddDeviceComponent() -> Element {
                 _ => None,
             })
             .filter(|p| {
-                for supply in appconfig.read().data.power_supply.iter() {
+                for supply in appconfig.read().data.power_supplies.iter() {
                     if supply.vid == p.vid
                         && supply.pid == p.pid
                         && supply.serial_number == p.serial_number
@@ -55,7 +55,7 @@ pub fn AddDeviceComponent() -> Element {
             onsubmit: move |evt| {
                 let index:usize = evt.data.values()["index"].as_value().parse().unwrap();
                 let port = &ports.read()[index];
-                appconfig.write().data.power_supply.push(PowerSupplyConfig{
+                appconfig.write().data.power_supplies.push(PowerSupplyConfig{
                     vid: port.vid,
                     pid: port.pid,
                     serial_number: port.serial_number.clone(),

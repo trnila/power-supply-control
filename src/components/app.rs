@@ -17,7 +17,7 @@ pub fn AppComponent() -> Element {
         style { {include_str!("../../assets/bootstrap.css")} },
         style { {include_str!("../../assets/main.css")} },
 
-        for config in *config.read().data.power_supply {
+        for config in *config.read().data.power_supplies {
             PowerSupplyComponent {id: config.id.clone()}
         }
 

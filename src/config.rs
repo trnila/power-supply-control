@@ -16,7 +16,7 @@ impl AppConfig {
             Err(err) => {
                 warn!("Failed to load global config {:?}: {}", path, err);
                 Config {
-                    power_supply: Vec::new(),
+                    power_supplies: Vec::new(),
                 }
             }
         };
@@ -26,7 +26,7 @@ impl AppConfig {
 
     pub fn power_supply(&mut self, id: &str) -> &mut PowerSupplyConfig {
         self.data
-            .power_supply
+            .power_supplies
             .iter_mut()
             .find(|config| config.id == id)
             .unwrap()
@@ -64,5 +64,6 @@ pub struct PowerSupplyConfig {
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct Config {
-    pub power_supply: Vec<PowerSupplyConfig>,
+    #[serde(default)]
+    pub power_supplies: Vec<PowerSupplyConfig>,
 }
