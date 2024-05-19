@@ -20,7 +20,7 @@ use log4rs::{
     config::{Appender, Root},
     encode::pattern::PatternEncoder,
 };
-use std::path::PathBuf;
+use std::{path::PathBuf, str::FromStr};
 use tracing::Level;
 
 use crate::components::app::AppComponent;
@@ -53,6 +53,10 @@ fn appconfig() -> Config {
 fn main() {
     std::fs::create_dir_all(get_config_dir()).unwrap();
 
+    let level = std::env::var("RUST_LOG").map_or(LevelFilter::Debug, |str| {
+        LevelFilter::from_str(&str).unwrap()
+    });
+
     let logfile = FileAppender::builder()
         .encoder(Box::new(PatternEncoder::new("{l}: {m}\n")))
         .build(get_config_dir().join("output.log"))
@@ -70,7 +74,7 @@ fn main() {
             Root::builder()
                 .appender("logfile")
                 .appender("console")
-                .build(LevelFilter::Trace),
+                .build(level),
         )
         .unwrap();
 
