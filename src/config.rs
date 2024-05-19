@@ -41,14 +41,14 @@ impl AppConfig {
     }
 }
 
-#[derive(Deserialize, Serialize, PartialEq, PartialOrd, Clone, Debug)]
+#[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
 pub struct ChannelConfig {
     pub name: String,
     pub voltage: f32,
     pub current: f32,
 }
 
-#[derive(Deserialize, Serialize, PartialEq, PartialOrd, Clone, Debug)]
+#[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct PowerSupplyConfig {
     pub vid: u16,
     pub pid: u16,
