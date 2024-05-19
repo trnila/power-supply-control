@@ -58,21 +58,27 @@ pub fn ChannelComponent(channel: Channel, config: ChannelConfig) -> Element {
                 div {class: "text-end", "{channel.current.current:.3} A"}
 
                 InputUnitComponent{
-                    value: config.voltage,
+                    value: Some(config.voltage),
                     unit: "V",
+                    required: true,
                     onsubmit: move |new_voltage| {
-                        power_supply_action.send(
-                            PowerSupplyAction::SetVoltage(channel.index, new_voltage)
-                        );
+                        if let Some(new_voltage) = new_voltage {
+                            power_supply_action.send(
+                                PowerSupplyAction::SetVoltage(channel.index, new_voltage)
+                            );
+                        }
                     },
                 }
                 InputUnitComponent{
-                    value: config.current,
+                    value: Some(config.current),
                     unit: "A",
+                    required: true,
                     onsubmit: move |new_current| {
-                        power_supply_action.send(
-                            PowerSupplyAction::SetCurrent(channel.index, new_current)
-                        );
+                        if let Some(new_current) = new_current {
+                            power_supply_action.send(
+                                PowerSupplyAction::SetCurrent(channel.index, new_current)
+                            );
+                        }
                     },
                 }
                 if !errors.is_empty() {
