@@ -72,8 +72,13 @@ pub fn ChannelComponent(channel: Channel, config: ChannelConfig) -> Element {
             }
             div {
                 class: "card-body",
-                div {class: "text-end", "{channel.voltage.current:.3} V"}
-                div {class: "text-end", "{channel.current.current:.3} A"}
+                if channel.enabled {
+                    div {class: "text-end", "{channel.voltage.current:.3} V"}
+                    div {class: "text-end", "{channel.current.current:.3} A"}
+                } else {
+                    div {class: "text-end text-muted", "{channel.voltage.set:.3} V"}
+                    div {class: "text-end text-muted", "{channel.current.set:.3} A"}
+                }
 
                 InputUnitComponent{
                     value: Some(config.voltage),
