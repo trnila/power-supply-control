@@ -34,6 +34,7 @@ pub enum PowerSupplyAction {
     SetVoltageTracking(u8),
     SetOvervoltageTrip(u8, Option<f32>),
     SetOvercurrentTrip(u8, Option<f32>),
+    Reconfigure,
 }
 
 struct PowerSupply {
@@ -70,19 +71,6 @@ pub fn PowerSupplyComponent(id: String) -> Element {
             }
             let mut port = port.unwrap();
             state.write().connected = true;
-
-            for ch in 0..=3 {
-                let multi_on = &config.channels[ch as usize].multi_on;
-                port.multichannel_on_setup(
-                    ch,
-                    match multi_on.enabled {
-                        true => MultiChannelOn::Delay(multi_on.delay_ms),
-                        false => MultiChannelOn::Disabled,
-                    },
-                )
-                .await
-                .unwrap();
-            }
 
             loop {
                 if let Ok(Some(msg)) =
@@ -198,6 +186,40 @@ pub fn PowerSupplyComponent(id: String) -> Element {
                             appconfig.write().save();
                             port.set_overcurrent_trip(channel, current).await
                         }
+                        PowerSupplyAction::Reconfigure => {
+                            port.all_channel_off().await.unwrap();
+                            port.set_voltage_tracking(config.voltage_tracking)
+                                .await
+                                .unwrap();
+
+                            let power_supply = appconfig.write().power_supply(&id).clone();
+
+                            for (ch, channel_config) in power_supply.channels.iter().enumerate() {
+                                let ch = ch as u8;
+                                port.set_vrange(ch, channel_config.vrange).await.unwrap();
+                                port.set_voltage(ch, channel_config.voltage).await.unwrap();
+                                port.set_current(ch, channel_config.current).await.unwrap();
+                                port.set_overvoltage_trip(ch, channel_config.overvoltage_trip)
+                                    .await
+                                    .unwrap();
+                                port.set_overcurrent_trip(ch, channel_config.overcurrent_trip)
+                                    .await
+                                    .unwrap();
+                                port.multichannel_on_setup(
+                                    ch,
+                                    match channel_config.multi_on.enabled {
+                                        true => {
+                                            MultiChannelOn::Delay(channel_config.multi_on.delay_ms)
+                                        }
+                                        false => MultiChannelOn::Disabled,
+                                    },
+                                )
+                                .await
+                                .unwrap();
+                            }
+
+                            Ok(())
+                        }
                     };
 
                     if let Err(err) = res {
@@ -232,6 +254,13 @@ pub fn PowerSupplyComponent(id: String) -> Element {
                 if state.read().connected {
                     div {
                         class: "d-flex gap-1",
+
+                        span {
+                            cursor: "pointer",
+                            onclick: move |_| sync_task.send(PowerSupplyAction::Reconfigure),
+                            dangerous_inner_html: iconify::svg!("hugeicons:configuration-01"),
+                        }
+
                     select {
                         class: "form-control form-control-sm w-auto",
                         onchange: move |evt| {
