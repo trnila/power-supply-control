@@ -133,7 +133,7 @@ void loop() {
         }
       }
     } else if(i.startsWith("CONFIG")) {
-      if(i[4] == '?') {
+      if(i[6] == '?') {
         Serial.println(voltage_tracking);
       } else {
         int n = i[7] - '0';

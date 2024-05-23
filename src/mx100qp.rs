@@ -194,6 +194,11 @@ impl Mx100qp {
         self.protocol.send(format!("CONFIG {config}")).await
     }
 
+    pub async fn get_voltage_tracking(&mut self) -> Result<u8, std::io::Error> {
+        self.protocol.send("CONFIG?".to_string()).await?;
+        Ok(self.protocol.next().await.unwrap()?.parse().unwrap())
+    }
+
     pub async fn set_overvoltage_trip(
         &mut self,
         ch: u8,

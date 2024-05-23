@@ -41,6 +41,7 @@ struct PowerSupply {
     name: String,
     channels: Vec<Channel>,
     connected: bool,
+    voltage_tracking: Option<u8>,
 }
 
 #[component]
@@ -51,6 +52,7 @@ pub fn PowerSupplyComponent(id: String) -> Element {
         name: config.name.clone(),
         channels: Vec::new(),
         connected: false,
+        voltage_tracking: None,
     });
 
     let voltage_tracking = config.voltage_tracking;
@@ -58,6 +60,17 @@ pub fn PowerSupplyComponent(id: String) -> Element {
     let channels = config.channels.clone();
 
     let voltage_trackings = ["V1 V2 V3 V4", "V1=V2 V3 V4", "V1 V2 V3=V4", "V1=V2 V3=V4"];
+
+    let mut errors = Vec::new();
+    if state.read().voltage_tracking != Some(config.voltage_tracking) {
+        errors.push(format!(
+            "Different voltage tracking {:?} is set.",
+            match state.read().voltage_tracking {
+                None => "",
+                Some(val) => voltage_trackings[val as usize],
+            }
+        ));
+    }
 
     let sync_task = use_coroutine(|mut rx: UnboundedReceiver<PowerSupplyAction>| async move {
         loop {
@@ -70,6 +83,7 @@ pub fn PowerSupplyComponent(id: String) -> Element {
                 continue;
             }
             let mut port = port.unwrap();
+            state.write().voltage_tracking = Some(port.get_voltage_tracking().await.unwrap());
             state.write().connected = true;
 
             loop {
@@ -168,7 +182,10 @@ pub fn PowerSupplyComponent(id: String) -> Element {
                         PowerSupplyAction::SetVoltageTracking(config) => {
                             appconfig.write().power_supply(&id).voltage_tracking = config;
                             appconfig.write().save();
-                            port.set_voltage_tracking(config).await
+                            port.set_voltage_tracking(config).await.unwrap();
+                            state.write().voltage_tracking =
+                                Some(port.get_voltage_tracking().await.unwrap());
+                            Ok(())
                         }
                         PowerSupplyAction::SetOvervoltageTrip(channel, voltage) => {
                             appconfig
@@ -188,11 +205,15 @@ pub fn PowerSupplyComponent(id: String) -> Element {
                         }
                         PowerSupplyAction::Reconfigure => {
                             port.all_channel_off().await.unwrap();
-                            port.set_voltage_tracking(config.voltage_tracking)
+
+                            let power_supply = appconfig.write().power_supply(&id).clone();
+
+                            port.set_voltage_tracking(power_supply.voltage_tracking)
                                 .await
                                 .unwrap();
 
-                            let power_supply = appconfig.write().power_supply(&id).clone();
+                            state.write().voltage_tracking =
+                                Some(port.get_voltage_tracking().await.unwrap());
 
                             for (ch, channel_config) in power_supply.channels.iter().enumerate() {
                                 let ch = ch as u8;
@@ -304,9 +325,27 @@ pub fn PowerSupplyComponent(id: String) -> Element {
             }
             if state.read().connected {
                 div {
-                    class: "card-body d-flex gap-1",
-                    for (i, channel) in state.read().channels.iter().enumerate() {
-                        ChannelComponent{channel: channel.clone(), config: channels[i].clone()}
+                    class: "card-body",
+
+                    if !errors.is_empty() {
+                        div {
+                            class: "alert alert-danger mt-1 p-0 mb-1",
+                            ul {
+                                class: "mt-1 mb-1",
+                                for error in errors {
+                                    li {
+                                        {error}
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    div {
+                        class: "d-flex gap-1",
+                        for (i, channel) in state.read().channels.iter().enumerate() {
+                            ChannelComponent{channel: channel.clone(), config: channels[i].clone()}
+                        }
                     }
                 }
             } else {
