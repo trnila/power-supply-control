@@ -84,6 +84,21 @@ pub fn PowerSupplyComponent(id: String) -> Element {
             }
             let mut port = port.unwrap();
             state.write().voltage_tracking = Some(port.get_voltage_tracking().await.unwrap());
+
+            for ch in 0..4 {
+                let multi_on = appconfig
+                    .write()
+                    .power_supply_channel(&id, ch)
+                    .multi_on
+                    .clone();
+                let behaviour = match multi_on.enabled {
+                    true => MultiChannelOn::Delay(multi_on.delay_ms),
+                    false => MultiChannelOn::Disabled,
+                };
+
+                port.multichannel_on_setup(ch, behaviour).await.unwrap();
+            }
+
             state.write().connected = true;
 
             loop {
