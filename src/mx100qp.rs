@@ -235,6 +235,10 @@ impl Mx100qp {
             .send(format!("O{unit}P{} {action}", ch + 1))
             .await
     }
+
+    pub async fn trip_reset(&mut self) -> Result<(), std::io::Error> {
+        self.protocol.send("TRIPRST".to_string()).await
+    }
 }
 
 fn find_usb(config: &PowerSupplyConfig) -> Option<String> {

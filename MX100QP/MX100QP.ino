@@ -41,6 +41,7 @@ uint8_t ranges[] = {1, 1, 1, 1};
 uint8_t voltage_tracking = 0;
 float overtrip[2][CHANNELS] = {0, 0, 0, 0};
 bool overtrip_enabled[2][CHANNELS];
+uint8_t limit_status[CHANNELS];
 
 void setup() {
   Serial.begin(9600);
@@ -58,12 +59,18 @@ int master_index(int ch) {
   return ch;
 }
 
+void channel_on(int ch) {
+  if(limit_status[ch] == 0) {
+    active[ch] = true;
+  }
+}
+
 void loop() {
   float V_out[CHANNELS];
   float I_out[CHANNELS];
   for(int ch = 0; ch < CHANNELS; ch++) {
     if(onactions[ch] == Delay && channel_multi_on_at[ch] >= 0 && millis() >= channel_multi_on_at[ch]) {
-      active[ch] = true;
+      channel_on(ch);
       channel_multi_on_at[ch] = -1;
     }
 
@@ -72,9 +79,11 @@ void loop() {
 
     if(overtrip_enabled[VOLTAGE_TRIP][master_index(ch)] && V_out[master_index(ch)] >= overtrip[VOLTAGE_TRIP][master_index(ch)]) {
       active[ch] = false;
+      limit_status[ch] |= 1 << 2;
     }
     if(overtrip_enabled[CURRENT_TRIP][master_index(ch)] && I_out[master_index(ch)] >= overtrip[CURRENT_TRIP][master_index(ch)]) {
       active[ch] = false;
+      limit_status[ch] |= 1 << 3;
     }
   }
 
@@ -90,7 +99,7 @@ void loop() {
       if(i[6] == '1') {
         for(int ch = 0; ch < CHANNELS; ch++) {
           if(onactions[ch] == Quick) {
-            active[ch] = true;
+            channel_on(ch);
           } else if(onactions[ch] == Delay) {
             channel_multi_on_at[ch] = millis() + onaction_delays[ch];
           }
@@ -183,7 +192,19 @@ void loop() {
         if(i[3] == '?') {
           Serial.println(active[n] ? '1' : '0');
         } else {
-          active[n] = i[4] - '0';
+          if(i[4] == '0') {
+            active[n] = false;
+          } else {
+            channel_on(n);
+          }
+        }
+      }
+    } else if(i.startsWith("LSR")) {
+      int n = (i[2] - '0') - 1;
+      if(n < CHANNELS) {
+        if(i[4] == '?') {
+          Serial.println(limit_status[n]);
+          limit_status[n] = 0;
         }
       }
     } else if(i.startsWith("ONACTION")) {
@@ -205,6 +226,10 @@ void loop() {
       int ch = (i[7] - '0') - 1;
       if(ch < CHANNELS) {
         onaction_delays[ch] = atoi(i.substring(9).c_str());
+      }
+    } else if(i.startsWith("TRIPRST")) {
+      for(int i = 0; i < CHANNELS; i++) {
+        limit_status[i] = 0;
       }
     } else {
       Serial.println("Unknown");

@@ -35,6 +35,7 @@ pub enum PowerSupplyAction {
     SetOvervoltageTrip(u8, Option<f32>),
     SetOvercurrentTrip(u8, Option<f32>),
     Reconfigure,
+    TripReset,
 }
 
 struct PowerSupply {
@@ -256,6 +257,7 @@ pub fn PowerSupplyComponent(id: String) -> Element {
 
                             Ok(())
                         }
+                        PowerSupplyAction::TripReset => port.trip_reset().await,
                     };
 
                     if let Err(err) = res {
@@ -295,6 +297,12 @@ pub fn PowerSupplyComponent(id: String) -> Element {
                             cursor: "pointer",
                             onclick: move |_| sync_task.send(PowerSupplyAction::Reconfigure),
                             dangerous_inner_html: iconify::svg!("hugeicons:configuration-01"),
+                        }
+
+                        button {
+                            class: "btn btn-sm btn-secondary",
+                            onclick: move |_| sync_task.send(PowerSupplyAction::TripReset),
+                            "Trip rst"
                         }
 
                     select {
