@@ -16,6 +16,7 @@ pub fn EditableTextComponent(text: String, onsubmit: EventHandler<String>) -> El
                     name: "value",
                     required: true,
                     class: "form-control form-control-sm",
+                    autocomplete: "off",
                     value: text,
                 }
                 button {

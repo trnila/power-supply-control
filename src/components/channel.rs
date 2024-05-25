@@ -137,6 +137,7 @@ pub fn ChannelComponent(channel: Channel, config: ChannelConfig) -> Element {
                         input {
                             r#type: "checkbox",
                             class: "form-check-input ms-1",
+                            autocomplete: "off",
                             checked: config.auto_vrange,
                             onchange: move |evt| {
                                 power_supply_action.send(PowerSupplyAction::SetAutoVRange(channel.index, evt.data.value().parse::<bool>().unwrap()));

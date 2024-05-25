@@ -40,6 +40,7 @@ pub fn InputUnitComponent(
                 required,
                 step: 0.001,
                 name: "value",
+                autocomplete: "off",
                 value: value,
             }
             span {

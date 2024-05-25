@@ -16,6 +16,7 @@ pub fn ChannelDelayComponent(channel: u8, enabled: bool, delay_ms: u32) -> Eleme
                 class: "form-check-input ms-1",
                 r#type: "checkbox",
                 checked: enabled,
+                autocomplete: "off",
                 onchange: move |evt| {
                     power_supply_action.send(PowerSupplyAction::SetMultiChannel(channel,
                         if evt.data.value().parse().unwrap() {
@@ -33,6 +34,7 @@ pub fn ChannelDelayComponent(channel: u8, enabled: bool, delay_ms: u32) -> Eleme
             value: "{delay_ms}",
             disabled: !enabled,
             min: 0,
+            autocomplete: "off",
             oninput: move |evt| {
                 delay_ms.set(evt.value().parse().unwrap_or(0));
             },
