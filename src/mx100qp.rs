@@ -1,7 +1,8 @@
 use std::time::Duration;
 
 use futures::{SinkExt, StreamExt};
-use log::error;
+use log::{debug, error};
+use tokio::time::error::Elapsed;
 use tokio_serial::{SerialPortBuilderExt, SerialStream};
 use tokio_util::codec::{Decoder, Framed};
 
@@ -20,6 +21,7 @@ pub enum OpenError {
     IOError(std::io::Error),
     IdNotMatch(NotMatchingId),
     ProtocolError,
+    Timeout,
 }
 
 impl From<tokio_serial::Error> for OpenError {
@@ -31,6 +33,12 @@ impl From<tokio_serial::Error> for OpenError {
 impl From<std::io::Error> for OpenError {
     fn from(err: std::io::Error) -> Self {
         OpenError::IOError(err)
+    }
+}
+
+impl From<Elapsed> for OpenError {
+    fn from(_: Elapsed) -> Self {
+        OpenError::Timeout
     }
 }
 
@@ -110,10 +118,9 @@ impl Mx100qp {
         let port = tokio_serial::new(port_path, 9600).open_native_async()?;
         let mut protocol = LineCodec.framed(port);
 
-        // TODO: remove because of arduino
-        tokio::time::sleep(Duration::from_millis(2000)).await;
-        protocol.send("*IDN?".to_string()).await?;
-        let line_result = wait_first_line(&mut protocol).await?;
+        let line_result =
+            tokio::time::timeout(Duration::from_millis(5000), wait_first_line(&mut protocol))
+                .await??;
         let device_id = line_result
             .split_terminator(',')
             .nth(2)
@@ -335,9 +342,13 @@ async fn wait_first_line(
     protocol: &mut Framed<SerialStream, LineCodec>,
 ) -> Result<std::string::String, std::io::Error> {
     loop {
-        match protocol.next().await {
-            Some(line) => return line,
-            None => continue,
+        protocol.send("*IDN?".to_string()).await?;
+        match tokio::time::timeout(Duration::from_millis(100), protocol.next()).await {
+            Ok(v) => match v {
+                Some(line) => return line,
+                None => continue,
+            },
+            Err(err) => debug!("{err}"),
         };
     }
 }
