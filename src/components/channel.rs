@@ -1,5 +1,6 @@
 use crate::{
     components::{
+        edit_mode::EditMode,
         editable_text::EditableTextComponent,
         input_unit::InputUnitComponent,
         power_supply::{ChannelSelection, PowerSupplyAction},
@@ -11,6 +12,7 @@ use dioxus::prelude::*;
 
 #[component]
 pub fn ChannelComponent(channel: Channel, config: ChannelConfig) -> Element {
+    let edit_mode = use_context::<Signal<EditMode>>();
     let power_supply_action = use_coroutine_handle::<PowerSupplyAction>();
     let card_class = if channel.enabled { "success" } else { "danger" };
 
@@ -84,6 +86,7 @@ pub fn ChannelComponent(channel: Channel, config: ChannelConfig) -> Element {
                     value: Some(config.voltage),
                     unit: "V",
                     required: true,
+                    disabled: !edit_mode.read().0,
                     onsubmit: move |new_voltage| {
                         if let Some(new_voltage) = new_voltage {
                             power_supply_action.send(
@@ -96,6 +99,7 @@ pub fn ChannelComponent(channel: Channel, config: ChannelConfig) -> Element {
                     value: Some(config.current),
                     unit: "A",
                     required: true,
+                    disabled: !edit_mode.read().0,
                     onsubmit: move |new_current| {
                         if let Some(new_current) = new_current {
                             power_supply_action.send(
@@ -109,6 +113,7 @@ pub fn ChannelComponent(channel: Channel, config: ChannelConfig) -> Element {
                     unit: "V",
                     prepend: "Overvoltage trip",
                     required: false,
+                    disabled: !edit_mode.read().0,
                     onsubmit: move |new_voltage| {
                         power_supply_action.send(
                             PowerSupplyAction::SetOvervoltageTrip(channel.index, new_voltage)
@@ -121,6 +126,7 @@ pub fn ChannelComponent(channel: Channel, config: ChannelConfig) -> Element {
                     unit: "A",
                     prepend: "Overcurrent trip",
                     required: false,
+                    disabled: !edit_mode.read().0,
                     onsubmit: move |new_current| {
                         power_supply_action.send(
                             PowerSupplyAction::SetOvercurrentTrip(channel.index, new_current)
@@ -139,6 +145,7 @@ pub fn ChannelComponent(channel: Channel, config: ChannelConfig) -> Element {
                             class: "form-check-input ms-1",
                             autocomplete: "off",
                             checked: config.auto_vrange,
+                            disabled: !edit_mode.read().0,
                             onchange: move |evt| {
                                 power_supply_action.send(PowerSupplyAction::SetAutoVRange(channel.index, evt.data.value().parse::<bool>().unwrap()));
                             }
@@ -147,7 +154,7 @@ pub fn ChannelComponent(channel: Channel, config: ChannelConfig) -> Element {
 
                     select {
                         class: "form-control form-control-sm",
-                        disabled: config.auto_vrange,
+                        disabled: config.auto_vrange || !edit_mode.read().0,
                         onchange: move |evt| {
                             power_supply_action.send(PowerSupplyAction::SetVRange(channel.index, evt.data.value().parse().unwrap()));
                         },

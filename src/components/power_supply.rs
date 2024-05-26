@@ -1,6 +1,7 @@
 use std::time::Duration;
 
 use crate::components::channel_delay::ChannelDelayComponent;
+use crate::components::edit_mode::EditMode;
 use crate::config::AppConfig;
 use crate::config::MultiOn;
 use crate::mx100qp::auto_vrange;
@@ -47,6 +48,7 @@ struct PowerSupply {
 
 #[component]
 pub fn PowerSupplyComponent(id: String) -> Element {
+    let edit_mode = use_context::<Signal<EditMode>>();
     let mut appconfig = use_context::<Signal<AppConfig>>();
     let config = appconfig.write().power_supply(&id).clone();
     let mut state = use_signal(|| PowerSupply {
@@ -307,6 +309,7 @@ pub fn PowerSupplyComponent(id: String) -> Element {
 
                     select {
                         class: "form-control form-control-sm w-auto",
+                        disabled: !edit_mode.read().0,
                         onchange: move |evt| {
                             sync_task.send(PowerSupplyAction::SetVoltageTracking(evt.data.value().parse().unwrap()))
                         },

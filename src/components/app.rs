@@ -1,5 +1,9 @@
 use crate::{
-    components::{add_device::AddDeviceComponent, power_supply::PowerSupplyComponent},
+    components::{
+        add_device::AddDeviceComponent,
+        edit_mode::{EditMode, EditModeComponent},
+        power_supply::PowerSupplyComponent,
+    },
     config::AppConfig,
     get_config_dir,
 };
@@ -13,14 +17,23 @@ pub fn AppComponent() -> Element {
         ))
     });
 
+    let edit_mode = use_context_provider(|| Signal::new(EditMode(false)));
+
     rsx! {
         style { {include_str!("../../assets/bootstrap.css")} },
         style { {include_str!("../../assets/main.css")} },
+
+        div {
+            class: "d-flex flex-row-reverse",
+            EditModeComponent {}
+        }
 
         for config in *config.read().data.power_supplies {
             PowerSupplyComponent {id: config.id.clone()}
         }
 
-        AddDeviceComponent{}
+        if edit_mode.read().0 {
+            AddDeviceComponent{}
+        }
     }
 }

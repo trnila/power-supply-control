@@ -14,6 +14,7 @@ pub fn InputUnitComponent(
     value: Option<f32>,
     unit: String,
     required: bool,
+    disabled: bool,
     onsubmit: EventHandler<Option<f32>>,
     prepend: Option<String>,
 ) -> Element {
@@ -38,6 +39,7 @@ pub fn InputUnitComponent(
                 class: "form-control form-control-sm text-end",
                 r#type: "number",
                 required,
+                disabled,
                 step: 0.001,
                 name: "value",
                 autocomplete: "off",
@@ -50,6 +52,7 @@ pub fn InputUnitComponent(
             }
             button {
                 class: "btn btn-sm btn-outline-secondary",
+                disabled,
                 "Set"
             }
         }
