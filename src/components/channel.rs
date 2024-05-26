@@ -54,6 +54,7 @@ pub fn ChannelComponent(channel: Channel, config: ChannelConfig) -> Element {
                         onsubmit: move |new_name: String| {
                             power_supply_action.send(PowerSupplyAction::RenameChannel(channel.index, new_name));
                         },
+                        disabled: !edit_mode.read().0,
                         text: config.name,
                     }
                 }

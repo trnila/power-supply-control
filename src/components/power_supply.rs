@@ -288,6 +288,7 @@ pub fn PowerSupplyComponent(id: String) -> Element {
                             appconfig.write().power_supply(&id1).name.clone_from(&new_name);
                             appconfig.write().save();
                         },
+                        disabled: !edit_mode.read().0,
                         text: state.read().name.clone(),
                     }
                 }

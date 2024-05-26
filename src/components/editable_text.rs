@@ -1,7 +1,11 @@
 use dioxus::prelude::*;
 
 #[component]
-pub fn EditableTextComponent(text: String, onsubmit: EventHandler<String>) -> Element {
+pub fn EditableTextComponent(
+    text: String,
+    disabled: bool,
+    onsubmit: EventHandler<String>,
+) -> Element {
     let mut editing = use_signal(|| false);
 
     rsx! {
@@ -27,14 +31,16 @@ pub fn EditableTextComponent(text: String, onsubmit: EventHandler<String>) -> El
         } else {
             span {
                 class: "text-nowrap",
-                ondoubleclick: move |_| *editing.write() = true,
+                ondoubleclick: move |_| *editing.write() = !disabled,
                 "{text}"
             }
-            span {
-                dangerous_inner_html: iconify::svg!("ic:round-drive-file-rename-outline"),
-                class: "ms-1",
-                cursor: "pointer",
-                onclick: move |_| *editing.write() = true,
+            if !disabled {
+                span {
+                    dangerous_inner_html: iconify::svg!("ic:round-drive-file-rename-outline"),
+                    class: "ms-1",
+                    cursor: "pointer",
+                    onclick: move |_| *editing.write() = true,
+                }
             }
         }
     }
