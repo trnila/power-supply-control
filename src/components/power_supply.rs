@@ -295,10 +295,12 @@ pub fn PowerSupplyComponent(id: String) -> Element {
                     div {
                         class: "d-flex gap-1",
 
-                        span {
-                            cursor: "pointer",
-                            onclick: move |_| sync_task.send(PowerSupplyAction::Reconfigure),
-                            dangerous_inner_html: iconify::svg!("hugeicons:configuration-01"),
+                        if edit_mode.read().0 {
+                            span {
+                                cursor: "pointer",
+                                onclick: move |_| sync_task.send(PowerSupplyAction::Reconfigure),
+                                dangerous_inner_html: iconify::svg!("hugeicons:configuration-01"),
+                            }
                         }
 
                         button {
@@ -307,17 +309,18 @@ pub fn PowerSupplyComponent(id: String) -> Element {
                             "Trip rst"
                         }
 
-                    select {
-                        class: "form-control form-control-sm w-auto",
-                        disabled: !edit_mode.read().0,
-                        onchange: move |evt| {
-                            sync_task.send(PowerSupplyAction::SetVoltageTracking(evt.data.value().parse().unwrap()))
-                        },
-                        for (i, label) in voltage_trackings.iter().enumerate() {
-                            option {
-                                value: "{i}",
-                                selected: voltage_tracking == i as u8,
-                                {label}
+                    if edit_mode.read().0 {
+                        select {
+                            class: "form-control form-control-sm w-auto",
+                            onchange: move |evt| {
+                                sync_task.send(PowerSupplyAction::SetVoltageTracking(evt.data.value().parse().unwrap()))
+                            },
+                            for (i, label) in voltage_trackings.iter().enumerate() {
+                                option {
+                                    value: "{i}",
+                                    selected: voltage_tracking == i as u8,
+                                    {label}
+                                }
                             }
                         }
                     }

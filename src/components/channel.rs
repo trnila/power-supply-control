@@ -82,87 +82,85 @@ pub fn ChannelComponent(channel: Channel, config: ChannelConfig) -> Element {
                     div {class: "text-end text-muted", "{channel.current.set:.3} A"}
                 }
 
-                InputUnitComponent{
-                    value: Some(config.voltage),
-                    unit: "V",
-                    required: true,
-                    disabled: !edit_mode.read().0,
-                    onsubmit: move |new_voltage| {
-                        if let Some(new_voltage) = new_voltage {
-                            power_supply_action.send(
-                                PowerSupplyAction::SetVoltage(channel.index, new_voltage)
-                            );
-                        }
-                    },
-                }
-                InputUnitComponent{
-                    value: Some(config.current),
-                    unit: "A",
-                    required: true,
-                    disabled: !edit_mode.read().0,
-                    onsubmit: move |new_current| {
-                        if let Some(new_current) = new_current {
-                            power_supply_action.send(
-                                PowerSupplyAction::SetCurrent(channel.index, new_current)
-                            );
-                        }
-                    },
-                }
-                InputUnitComponent{
-                    value: config.overvoltage_trip,
-                    unit: "V",
-                    prepend: "Overvoltage trip",
-                    required: false,
-                    disabled: !edit_mode.read().0,
-                    onsubmit: move |new_voltage| {
-                        power_supply_action.send(
-                            PowerSupplyAction::SetOvervoltageTrip(channel.index, new_voltage)
-                        );
-                    },
-                }
-
-                InputUnitComponent{
-                    value: config.overcurrent_trip,
-                    unit: "A",
-                    prepend: "Overcurrent trip",
-                    required: false,
-                    disabled: !edit_mode.read().0,
-                    onsubmit: move |new_current| {
-                        power_supply_action.send(
-                            PowerSupplyAction::SetOvercurrentTrip(channel.index, new_current)
-                        );
-                    },
-                }
-
-                div {
-                    class: "input-group input-group-sm",
-                    span {
-                        class: "input-group-text form-switch",
-                        "Auto VRANGE"
-
-                        input {
-                            r#type: "checkbox",
-                            class: "form-check-input ms-1",
-                            autocomplete: "off",
-                            checked: config.auto_vrange,
-                            disabled: !edit_mode.read().0,
-                            onchange: move |evt| {
-                                power_supply_action.send(PowerSupplyAction::SetAutoVRange(channel.index, evt.data.value().parse::<bool>().unwrap()));
+                if edit_mode.read().0 {
+                    InputUnitComponent{
+                        value: Some(config.voltage),
+                        unit: "V",
+                        required: true,
+                        onsubmit: move |new_voltage| {
+                            if let Some(new_voltage) = new_voltage {
+                                power_supply_action.send(
+                                    PowerSupplyAction::SetVoltage(channel.index, new_voltage)
+                                );
                             }
-                        }
+                        },
+                    }
+                    InputUnitComponent{
+                        value: Some(config.current),
+                        unit: "A",
+                        required: true,
+                        onsubmit: move |new_current| {
+                            if let Some(new_current) = new_current {
+                                power_supply_action.send(
+                                    PowerSupplyAction::SetCurrent(channel.index, new_current)
+                                );
+                            }
+                        },
+                    }
+                    InputUnitComponent{
+                        value: config.overvoltage_trip,
+                        unit: "V",
+                        prepend: "Overvoltage trip",
+                        required: false,
+                        onsubmit: move |new_voltage| {
+                            power_supply_action.send(
+                                PowerSupplyAction::SetOvervoltageTrip(channel.index, new_voltage)
+                            );
+                        },
                     }
 
-                    select {
-                        class: "form-control form-control-sm",
-                        disabled: config.auto_vrange || !edit_mode.read().0,
-                        onchange: move |evt| {
-                            power_supply_action.send(PowerSupplyAction::SetVRange(channel.index, evt.data.value().parse().unwrap()));
+                    InputUnitComponent{
+                        value: config.overcurrent_trip,
+                        unit: "A",
+                        prepend: "Overcurrent trip",
+                        required: false,
+                        onsubmit: move |new_current| {
+                            power_supply_action.send(
+                                PowerSupplyAction::SetOvercurrentTrip(channel.index, new_current)
+                            );
                         },
-                        for (i, range) in VRANGES[channel.index as usize].iter().enumerate() {
-                            option {
-                                selected: config.vrange as usize == i,
-                                value: "{i}",
-                                "{range}"
+                    }
+
+                    div {
+                        class: "input-group input-group-sm",
+                        span {
+                            class: "input-group-text form-switch",
+                            "Auto VRANGE"
+
+                            input {
+                                r#type: "checkbox",
+                                class: "form-check-input ms-1",
+                                autocomplete: "off",
+                                checked: config.auto_vrange,
+                                disabled: !edit_mode.read().0,
+                                onchange: move |evt| {
+                                    power_supply_action.send(PowerSupplyAction::SetAutoVRange(channel.index, evt.data.value().parse::<bool>().unwrap()));
+                                }
+                            }
+                        }
+
+                        select {
+                            class: "form-control form-control-sm",
+                            disabled: config.auto_vrange || !edit_mode.read().0,
+                            onchange: move |evt| {
+                                power_supply_action.send(PowerSupplyAction::SetVRange(channel.index, evt.data.value().parse().unwrap()));
+                            },
+                            for (i, range) in VRANGES[channel.index as usize].iter().enumerate() {
+                                option {
+                                    selected: config.vrange as usize == i,
+                                    value: "{i}",
+                                    "{range}"
+                                }
                             }
                         }
                     }
