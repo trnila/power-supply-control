@@ -2,6 +2,7 @@ pub mod add_device;
 pub mod app;
 pub mod channel;
 pub mod channel_delay;
+pub mod config_selector;
 pub mod edit_mode;
 pub mod editable_text;
 pub mod input_unit;

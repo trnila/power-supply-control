@@ -24,6 +24,20 @@ impl AppConfig {
         Self { path, data }
     }
 
+    pub fn name(&self) -> &str {
+        self.path.file_stem().unwrap().to_str().unwrap()
+    }
+
+    pub fn rename(&mut self, new_name: &str) {
+        let new_path = self
+            .path
+            .clone()
+            .with_file_name(new_name)
+            .with_extension("json");
+        std::fs::rename(&self.path, &new_path).unwrap();
+        self.path = new_path;
+    }
+
     pub fn power_supply(&mut self, id: &str) -> &mut PowerSupplyConfig {
         self.data
             .power_supplies

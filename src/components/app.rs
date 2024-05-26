@@ -1,6 +1,7 @@
 use crate::{
     components::{
         add_device::AddDeviceComponent,
+        config_selector::ConfigSelectorComponent,
         edit_mode::{EditMode, EditModeComponent},
         power_supply::PowerSupplyComponent,
     },
@@ -24,7 +25,11 @@ pub fn AppComponent() -> Element {
         style { {include_str!("../../assets/main.css")} },
 
         div {
-            class: "d-flex flex-row-reverse",
+            class: "d-flex p-1",
+            div {
+                class: "me-auto",
+                ConfigSelectorComponent {}
+            }
             EditModeComponent {}
         }
 
