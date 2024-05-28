@@ -271,18 +271,23 @@ impl Mx100qp {
             self.protocol.send(format!("VRANGE{i}?")).await?;
             let vrange = self.protocol.next().await.unwrap()?.parse().unwrap();
 
-            self.protocol.send(format!("OVP{}?", i)).await?;
-            let ovp = match self
-                .protocol
-                .next()
-                .await
-                .unwrap()?
-                .split_once(' ')
-                .unwrap()
-                .1
-            {
-                "OFF" => None,
-                val => Some(val.parse().unwrap()),
+            // XXX: power supply is not responding OVP2? if CONFIG == 3
+            let ovp = if voltage_tracking == 3 && i == 2 {
+                None
+            } else {
+                self.protocol.send(format!("OVP{}?", i)).await?;
+                match self
+                    .protocol
+                    .next()
+                    .await
+                    .unwrap()?
+                    .split_once(' ')
+                    .unwrap()
+                    .1
+                {
+                    "OFF" => None,
+                    val => Some(val.parse().unwrap()),
+                }
             };
 
             self.protocol.send(format!("OCP{}?", i)).await?;
