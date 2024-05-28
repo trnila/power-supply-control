@@ -154,7 +154,7 @@ void loop() {
       int n = (i[1] - '0') - 1;
       if(n < CHANNELS) {
         if(i[2] == 'O' && i[3] == '?') {
-          Serial.print(V_out[n], 3);
+          Serial.print(V_out[master_index(n)], 3);
           Serial.println("V");
         } else if(i[2] == '?') {
           Serial.print("V");
@@ -178,7 +178,7 @@ void loop() {
           Serial.print("I");
           Serial.print((char) (n + 1 + '0'));
           Serial.print(' ');
-          Serial.println(I[master_index(n)], 3);
+          Serial.println(I[n], 3);
         } else if(i[2] == ' ') {
           float req = atof(i.substring(3).c_str());
           if(req <= range_limits[n >> 1][ranges[n]].current) {
