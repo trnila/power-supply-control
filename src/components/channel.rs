@@ -17,7 +17,9 @@ pub fn ChannelComponent(channel: Channel, config: ChannelConfig) -> Element {
     let card_class = if channel.enabled { "success" } else { "danger" };
 
     let mut errors = Vec::new();
-    if channel.voltage.set != config.voltage {
+    if channel.voltage.set != config.voltage
+        && channel.voltage_tracking != VoltageTrackingState::Slave
+    {
         errors.push(format!("{:.3} V is set!", channel.voltage.set));
     }
 
@@ -95,17 +97,19 @@ pub fn ChannelComponent(channel: Channel, config: ChannelConfig) -> Element {
                 }
 
                 if edit_mode.read().0 {
-                    InputUnitComponent{
-                        value: Some(config.voltage),
-                        unit: "V",
-                        required: true,
-                        onsubmit: move |new_voltage| {
-                            if let Some(new_voltage) = new_voltage {
-                                power_supply_action.send(
-                                    PowerSupplyAction::SetVoltage(channel.index, new_voltage)
-                                );
-                            }
-                        },
+                    if channel.voltage_tracking != VoltageTrackingState::Slave {
+                        InputUnitComponent{
+                            value: Some(config.voltage),
+                            unit: "V",
+                            required: true,
+                            onsubmit: move |new_voltage| {
+                                if let Some(new_voltage) = new_voltage {
+                                    power_supply_action.send(
+                                        PowerSupplyAction::SetVoltage(channel.index, new_voltage)
+                                    );
+                                }
+                            },
+                        }
                     }
                     InputUnitComponent{
                         value: Some(config.current),
