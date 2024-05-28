@@ -6,7 +6,7 @@ use crate::{
         power_supply::{ChannelSelection, PowerSupplyAction},
     },
     config::ChannelConfig,
-    mx100qp::{Channel, VRANGES},
+    mx100qp::{Channel, VoltageTrackingState, VRANGES},
 };
 use dioxus::prelude::*;
 
@@ -46,6 +46,17 @@ pub fn ChannelComponent(channel: Channel, config: ChannelConfig) -> Element {
     rsx! {
         div {
             class: "card flex-fill",
+            if channel.voltage_tracking == VoltageTrackingState::Master {
+                div {
+                    dangerous_inner_html: iconify::svg!("ph:link"),
+                    style: "
+                        position: absolute;
+                        right: -15px;
+                        top: 2px;
+                        z-index: 2;
+                        font-size: 25px;",
+                }
+            }
             div {
                 class: "card-header d-flex gap-1 text-bg-{card_class}",
                 div {

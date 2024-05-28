@@ -258,6 +258,63 @@ impl Mx100qp {
     pub async fn trip_reset(&mut self) -> Result<(), std::io::Error> {
         self.protocol.send("TRIPRST".to_string()).await
     }
+
+    pub async fn read_channels(&mut self) -> Result<Vec<Channel>, std::io::Error> {
+        let mut mychannels = Vec::<Channel>::new();
+
+        let voltage_tracking = self.get_voltage_tracking().await?;
+
+        for i in 1..=4 {
+            self.protocol.send(format!("OP{i}?")).await?;
+            let enabled = self.protocol.next().await.unwrap()? == "1";
+
+            self.protocol.send(format!("VRANGE{i}?")).await?;
+            let vrange = self.protocol.next().await.unwrap()?.parse().unwrap();
+
+            self.protocol.send(format!("OVP{}?", i)).await?;
+            let ovp = match self
+                .protocol
+                .next()
+                .await
+                .unwrap()?
+                .split_once(' ')
+                .unwrap()
+                .1
+            {
+                "OFF" => None,
+                val => Some(val.parse().unwrap()),
+            };
+
+            self.protocol.send(format!("OCP{}?", i)).await?;
+            let ocp = match self
+                .protocol
+                .next()
+                .await
+                .unwrap()?
+                .split_once(' ')
+                .unwrap()
+                .1
+            {
+                "OFF" => None,
+                val => Some(val.parse().unwrap()),
+            };
+
+            mychannels.push(Channel {
+                enabled,
+                vrange,
+                index: i - 1,
+                overvoltage_trip: ovp,
+                overcurrent_trip: ocp,
+                voltage: read_unit(&mut self.protocol, i, 'V').await?,
+                current: read_unit(&mut self.protocol, i, 'I').await?,
+                voltage_tracking: VoltageTrackingState::from_channel_and_config(
+                    i - 1,
+                    voltage_tracking,
+                ),
+            });
+        }
+        Ok(mychannels)
+    }
 }
 
 fn find_usb(config: &PowerSupplyConfig) -> Option<String> {
@@ -283,6 +340,25 @@ pub struct Unit {
 }
 
 #[derive(Debug, Clone, PartialEq, PartialOrd)]
+pub enum VoltageTrackingState {
+    None,
+    Master,
+    Slave,
+}
+
+impl VoltageTrackingState {
+    fn from_channel_and_config(ch: u8, config: u8) -> VoltageTrackingState {
+        match (config, ch) {
+            (1, 0) | (3, 0) => VoltageTrackingState::Master,
+            (1, 1) | (3, 1) => VoltageTrackingState::Slave,
+            (2, 2) | (3, 2) => VoltageTrackingState::Master,
+            (2, 3) | (3, 3) => VoltageTrackingState::Slave,
+            _ => VoltageTrackingState::None,
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, PartialOrd)]
 pub struct Channel {
     pub index: u8,
     pub vrange: u8,
@@ -291,42 +367,7 @@ pub struct Channel {
     pub voltage: Unit,
     pub overvoltage_trip: Option<f32>,
     pub overcurrent_trip: Option<f32>,
-}
-
-pub async fn read_channels(
-    reader: &mut Framed<SerialStream, LineCodec>,
-) -> Result<Vec<Channel>, std::io::Error> {
-    let mut mychannels = Vec::<Channel>::new();
-    for i in 1..=4 {
-        reader.send(format!("OP{i}?")).await?;
-        let enabled = reader.next().await.unwrap()? == "1";
-
-        reader.send(format!("VRANGE{i}?")).await?;
-        let vrange = reader.next().await.unwrap()?.parse().unwrap();
-
-        reader.send(format!("OVP{}?", i)).await?;
-        let ovp = match reader.next().await.unwrap()?.split_once(' ').unwrap().1 {
-            "OFF" => None,
-            val => Some(val.parse().unwrap()),
-        };
-
-        reader.send(format!("OCP{}?", i)).await?;
-        let ocp = match reader.next().await.unwrap()?.split_once(' ').unwrap().1 {
-            "OFF" => None,
-            val => Some(val.parse().unwrap()),
-        };
-
-        mychannels.push(Channel {
-            enabled,
-            vrange,
-            index: i - 1,
-            overvoltage_trip: ovp,
-            overcurrent_trip: ocp,
-            voltage: read_unit(reader, i, 'V').await?,
-            current: read_unit(reader, i, 'I').await?,
-        });
-    }
-    Ok(mychannels)
+    pub voltage_tracking: VoltageTrackingState,
 }
 
 async fn read_unit(

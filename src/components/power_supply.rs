@@ -5,7 +5,6 @@ use crate::components::edit_mode::EditMode;
 use crate::config::AppConfig;
 use crate::config::MultiOn;
 use crate::mx100qp::auto_vrange;
-use crate::mx100qp::read_channels;
 use crate::mx100qp::Channel;
 use crate::mx100qp::MultiChannelOn;
 use crate::mx100qp::Mx100qp;
@@ -267,7 +266,7 @@ pub fn PowerSupplyComponent(id: String) -> Element {
                         break;
                     }
                 }
-                match read_channels(&mut port.protocol).await {
+                match port.read_channels().await {
                     Ok(new) => state.write().channels = new,
                     Err(_) => break,
                 };
