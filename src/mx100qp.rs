@@ -104,12 +104,24 @@ const RANGE_B: [VRange; 4] = [
 pub const VRANGES: [[VRange; 4]; 4] = [RANGE_A, RANGE_A, RANGE_B, RANGE_B];
 
 pub fn auto_vrange(ch: u8, voltage: f32, current: f32) -> Option<u8> {
-    for (index, vrange) in VRANGES[ch as usize].iter().enumerate() {
-        if voltage < vrange.voltage && current < vrange.current {
-            return Some(index as u8);
-        }
+    let mut candidates: Vec<(usize, &VRange)> = VRANGES[ch as usize]
+        .iter()
+        .enumerate()
+        .skip(1)
+        .filter_map(|(i, vrange)| {
+            if voltage <= vrange.voltage && current <= vrange.current {
+                Some((i, vrange))
+            } else {
+                None
+            }
+        })
+        .collect();
+    candidates.sort_by_key(|(_, vrange)| vrange.voltage as u8);
+    if candidates.is_empty() {
+        None
+    } else {
+        Some(candidates[0].0 as u8)
     }
-    None
 }
 
 impl Mx100qp {
@@ -350,5 +362,21 @@ async fn wait_first_line(
             },
             Err(err) => debug!("{err}"),
         };
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_auto_vrange() {
+        assert_eq!(auto_vrange(0, 0.0, 0.0), Some(2));
+        assert_eq!(auto_vrange(0, 1.0, 2.0), Some(2));
+        assert_eq!(auto_vrange(0, 35.0, 0.1), Some(1));
+        assert_eq!(auto_vrange(0, 35.0, 3.0), Some(1));
+        assert_eq!(auto_vrange(0, 35.0, 5.0), Some(3));
+        assert_eq!(auto_vrange(0, 35.0, 6.0), Some(3));
+        assert_eq!(auto_vrange(0, 70.0, 0.1), None);
     }
 }
