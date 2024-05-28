@@ -8,6 +8,7 @@ use crate::mx100qp::auto_vrange;
 use crate::mx100qp::Channel;
 use crate::mx100qp::MultiChannelOn;
 use crate::mx100qp::Mx100qp;
+use crate::mx100qp::VoltageTracking;
 use dioxus::prelude::*;
 use futures::StreamExt;
 use log::{error, info};
@@ -31,7 +32,7 @@ pub enum PowerSupplyAction {
     SetMultiChannel(u8, MultiChannelOn),
     SetVRange(u8, u8),
     SetAutoVRange(u8, bool),
-    SetVoltageTracking(u8),
+    SetVoltageTracking(VoltageTracking),
     SetOvervoltageTrip(u8, Option<f32>),
     SetOvercurrentTrip(u8, Option<f32>),
     Reconfigure,
@@ -42,7 +43,7 @@ struct PowerSupply {
     name: String,
     channels: Vec<Channel>,
     connected: bool,
-    voltage_tracking: Option<u8>,
+    voltage_tracking: Option<VoltageTracking>,
 }
 
 #[component]
@@ -64,12 +65,14 @@ pub fn PowerSupplyComponent(id: String) -> Element {
     let voltage_trackings = ["V1 V2 V3 V4", "V1=V2 V3 V4", "V1 V2 V3=V4", "V1=V2 V3=V4"];
 
     let mut errors = Vec::new();
-    if state.read().voltage_tracking != Some(config.voltage_tracking) {
+    if state.read().voltage_tracking
+        != Some(VoltageTracking::try_from(config.voltage_tracking).unwrap())
+    {
         errors.push(format!(
             "Different voltage tracking {:?} is set.",
-            match state.read().voltage_tracking {
+            match &state.read().voltage_tracking {
                 None => "",
-                Some(val) => voltage_trackings[val as usize],
+                Some(val) => voltage_trackings[Into::<u8>::into(val.clone()) as usize],
             }
         ));
     }
@@ -197,7 +200,8 @@ pub fn PowerSupplyComponent(id: String) -> Element {
                             Ok(())
                         }
                         PowerSupplyAction::SetVoltageTracking(config) => {
-                            appconfig.write().power_supply(&id).voltage_tracking = config;
+                            appconfig.write().power_supply(&id).voltage_tracking =
+                                config.clone().into();
                             appconfig.write().save();
                             port.set_voltage_tracking(config).await.unwrap();
                             state.write().voltage_tracking =
@@ -225,9 +229,11 @@ pub fn PowerSupplyComponent(id: String) -> Element {
 
                             let power_supply = appconfig.write().power_supply(&id).clone();
 
-                            port.set_voltage_tracking(power_supply.voltage_tracking)
-                                .await
-                                .unwrap();
+                            port.set_voltage_tracking(
+                                VoltageTracking::try_from(power_supply.voltage_tracking).unwrap(),
+                            )
+                            .await
+                            .unwrap();
 
                             state.write().voltage_tracking =
                                 Some(port.get_voltage_tracking().await.unwrap());
@@ -313,7 +319,7 @@ pub fn PowerSupplyComponent(id: String) -> Element {
                         select {
                             class: "form-control form-control-sm w-auto",
                             onchange: move |evt| {
-                                sync_task.send(PowerSupplyAction::SetVoltageTracking(evt.data.value().parse().unwrap()))
+                                sync_task.send(PowerSupplyAction::SetVoltageTracking(evt.data.value().parse::<u8>().unwrap().try_into().unwrap()))
                             },
                             for (i, label) in voltage_trackings.iter().enumerate() {
                                 option {

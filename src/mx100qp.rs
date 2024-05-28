@@ -1,6 +1,7 @@
 use std::time::Duration;
 
 use futures::{SinkExt, StreamExt};
+use int_enum::IntEnum;
 use log::{debug, error};
 use tokio::time::error::Elapsed;
 use tokio_serial::{SerialPortBuilderExt, SerialStream};
@@ -55,6 +56,15 @@ pub struct Mx100qp {
 pub struct VRange {
     pub voltage: f32,
     pub current: f32,
+}
+
+#[repr(u8)]
+#[derive(IntEnum, PartialEq, Debug, Clone)]
+pub enum VoltageTracking {
+    NoTracking = 0,
+    CH0_1 = 1,
+    CH2_3 = 2,
+    CH0_1AndCH2_3 = 3,
 }
 
 impl std::fmt::Display for VRange {
@@ -209,13 +219,26 @@ impl Mx100qp {
             .await
     }
 
-    pub async fn set_voltage_tracking(&mut self, config: u8) -> Result<(), std::io::Error> {
-        self.protocol.send(format!("CONFIG {config}")).await
+    pub async fn set_voltage_tracking(
+        &mut self,
+        config: VoltageTracking,
+    ) -> Result<(), std::io::Error> {
+        self.protocol
+            .send(format!("CONFIG {}", u8::from(config)))
+            .await
     }
 
-    pub async fn get_voltage_tracking(&mut self) -> Result<u8, std::io::Error> {
+    pub async fn get_voltage_tracking(&mut self) -> Result<VoltageTracking, std::io::Error> {
         self.protocol.send("CONFIG?".to_string()).await?;
-        Ok(self.protocol.next().await.unwrap()?.parse().unwrap())
+        Ok(self
+            .protocol
+            .next()
+            .await
+            .unwrap()?
+            .parse::<u8>()
+            .unwrap()
+            .try_into()
+            .unwrap())
     }
 
     pub async fn set_overvoltage_trip(
@@ -272,7 +295,7 @@ impl Mx100qp {
             let vrange = self.protocol.next().await.unwrap()?.parse().unwrap();
 
             // XXX: power supply is not responding OVP2? if CONFIG == 3
-            let ovp = if voltage_tracking == 3 && i == 2 {
+            let ovp = if voltage_tracking == VoltageTracking::CH0_1AndCH2_3 && i == 2 {
                 None
             } else {
                 self.protocol.send(format!("OVP{}?", i)).await?;
@@ -314,7 +337,7 @@ impl Mx100qp {
                 current: read_unit(&mut self.protocol, i, 'I').await?,
                 voltage_tracking: VoltageTrackingState::from_channel_and_config(
                     i - 1,
-                    voltage_tracking,
+                    &voltage_tracking,
                 ),
             });
         }
@@ -352,12 +375,20 @@ pub enum VoltageTrackingState {
 }
 
 impl VoltageTrackingState {
-    fn from_channel_and_config(ch: u8, config: u8) -> VoltageTrackingState {
+    fn from_channel_and_config(ch: u8, config: &VoltageTracking) -> VoltageTrackingState {
         match (config, ch) {
-            (1, 0) | (3, 0) => VoltageTrackingState::Master,
-            (1, 1) | (3, 1) => VoltageTrackingState::Slave,
-            (2, 2) | (3, 2) => VoltageTrackingState::Master,
-            (2, 3) | (3, 3) => VoltageTrackingState::Slave,
+            (VoltageTracking::CH0_1, 0) | (VoltageTracking::CH0_1AndCH2_3, 0) => {
+                VoltageTrackingState::Master
+            }
+            (VoltageTracking::CH0_1, 1) | (VoltageTracking::CH0_1AndCH2_3, 1) => {
+                VoltageTrackingState::Slave
+            }
+            (VoltageTracking::CH2_3, 2) | (VoltageTracking::CH0_1AndCH2_3, 2) => {
+                VoltageTrackingState::Master
+            }
+            (VoltageTracking::CH2_3, 3) | (VoltageTracking::CH0_1AndCH2_3, 3) => {
+                VoltageTrackingState::Slave
+            }
             _ => VoltageTrackingState::None,
         }
     }
