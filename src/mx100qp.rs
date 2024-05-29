@@ -313,18 +313,22 @@ impl Mx100qp {
                 }
             };
 
-            self.protocol.send(format!("OCP{}?", i)).await?;
-            let ocp = match self
-                .protocol
-                .next()
-                .await
-                .unwrap()?
-                .split_once(' ')
-                .unwrap()
-                .1
-            {
-                "OFF" => None,
-                val => Some(val.parse().unwrap()),
+            let ocp = if voltage_tracking == VoltageTracking::CH0_1AndCH2_3 && i == 2 {
+                None
+            } else {
+                self.protocol.send(format!("OCP{}?", i)).await?;
+                match self
+                    .protocol
+                    .next()
+                    .await
+                    .unwrap()?
+                    .split_once(' ')
+                    .unwrap()
+                    .1
+                {
+                    "OFF" => None,
+                    val => Some(val.parse().unwrap()),
+                }
             };
 
             mychannels.push(Channel {
