@@ -83,8 +83,11 @@ pub fn AddDeviceComponent() -> Element {
 
             button {
                 class: "btn btn-sm btn-secondary",
-                prevent_default: "onclick",
-                onclick: move |_| *ports.write() = scan_usb(),
+                onclick: move |evt| {
+                    evt.prevent_default();
+                    *ports.write() = scan_usb();
+
+                },
                 "Rescan USB"
             }
             select {

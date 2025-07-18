@@ -17,8 +17,8 @@ pub fn EditModeComponent() -> Element {
                 r#type: "checkbox",
                 id: "edit-mode-switch",
                 checked: edit_mode.read().0,
-                prevent_default: "onclick",
-                onclick: move |_| {
+                onclick: move |evt| {
+                    evt.prevent_default();
                     if !edit_mode.read().0 {
                         *show.write() = true;
                     } else {

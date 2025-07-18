@@ -77,205 +77,212 @@ pub fn PowerSupplyComponent(id: String) -> Element {
         ));
     }
 
-    let sync_task = use_coroutine(|mut rx: UnboundedReceiver<PowerSupplyAction>| async move {
-        loop {
-            state.write().connected = false;
-            let port = Mx100qp::open(&config.clone()).await;
-
-            if let Err(err) = port {
-                error!("failed to open port: {:?}", err);
-                tokio::time::sleep(Duration::from_millis(1000)).await;
-                continue;
-            }
-            let mut port = port.unwrap();
-            state.write().voltage_tracking = Some(port.get_voltage_tracking().await.unwrap());
-
-            for ch in 0..4 {
-                let multi_on = appconfig
-                    .write()
-                    .power_supply_channel(&id, ch)
-                    .multi_on
-                    .clone();
-                let behaviour = match multi_on.enabled {
-                    true => MultiChannelOn::Delay(multi_on.delay_ms),
-                    false => MultiChannelOn::Disabled,
-                };
-
-                port.multichannel_on_setup(ch, behaviour).await.unwrap();
-            }
-
-            state.write().connected = true;
-
+    let sync_task = use_coroutine(move |mut rx: UnboundedReceiver<PowerSupplyAction>| {
+        let id = id.clone();
+        let config = config.clone();
+        async move {
             loop {
-                if let Ok(Some(msg)) =
-                    tokio::time::timeout(Duration::from_millis(100), rx.next()).await
-                {
-                    info!("{:?}", msg);
-                    let res = match msg {
-                        PowerSupplyAction::On(channels) => match channels {
-                            ChannelSelection::AllChannels => port.all_channel_on().await,
-                            ChannelSelection::Channel(ch) => port.channel_on(ch).await,
-                        },
-                        PowerSupplyAction::Off(channels) => match channels {
-                            ChannelSelection::AllChannels => port.all_channel_off().await,
-                            ChannelSelection::Channel(ch) => port.channel_off(ch).await,
-                        },
-                        PowerSupplyAction::SetVoltage(ch, new_voltage) => {
-                            let mut conf = appconfig.write();
-                            let channel_conf = &mut conf.power_supply_channel(&id, ch);
-                            channel_conf.voltage = new_voltage;
+                state.write().connected = false;
+                let port = Mx100qp::open(&config.clone()).await;
 
-                            if channel_conf.auto_vrange {
-                                if let Some(vrange) =
-                                    auto_vrange(ch, channel_conf.voltage, channel_conf.current)
-                                {
-                                    channel_conf.vrange = vrange;
-                                    port.set_vrange(ch, channel_conf.vrange).await.unwrap();
+                if let Err(err) = port {
+                    error!("failed to open port: {:?}", err);
+                    tokio::time::sleep(Duration::from_millis(1000)).await;
+                    continue;
+                }
+                let mut port = port.unwrap();
+                state.write().voltage_tracking = Some(port.get_voltage_tracking().await.unwrap());
+
+                for ch in 0..4 {
+                    let multi_on = appconfig
+                        .write()
+                        .power_supply_channel(&id, ch)
+                        .multi_on
+                        .clone();
+                    let behaviour = match multi_on.enabled {
+                        true => MultiChannelOn::Delay(multi_on.delay_ms),
+                        false => MultiChannelOn::Disabled,
+                    };
+
+                    port.multichannel_on_setup(ch, behaviour).await.unwrap();
+                }
+
+                state.write().connected = true;
+
+                loop {
+                    if let Ok(Some(msg)) =
+                        tokio::time::timeout(Duration::from_millis(100), rx.next()).await
+                    {
+                        info!("{:?}", msg);
+                        let res = match msg {
+                            PowerSupplyAction::On(channels) => match channels {
+                                ChannelSelection::AllChannels => port.all_channel_on().await,
+                                ChannelSelection::Channel(ch) => port.channel_on(ch).await,
+                            },
+                            PowerSupplyAction::Off(channels) => match channels {
+                                ChannelSelection::AllChannels => port.all_channel_off().await,
+                                ChannelSelection::Channel(ch) => port.channel_off(ch).await,
+                            },
+                            PowerSupplyAction::SetVoltage(ch, new_voltage) => {
+                                let mut conf = appconfig.write();
+                                let channel_conf = &mut conf.power_supply_channel(&id, ch);
+                                channel_conf.voltage = new_voltage;
+
+                                if channel_conf.auto_vrange {
+                                    if let Some(vrange) =
+                                        auto_vrange(ch, channel_conf.voltage, channel_conf.current)
+                                    {
+                                        channel_conf.vrange = vrange;
+                                        port.set_vrange(ch, channel_conf.vrange).await.unwrap();
+                                    }
                                 }
+
+                                conf.save();
+                                port.set_voltage(ch, new_voltage).await
                             }
+                            PowerSupplyAction::SetCurrent(ch, new_current) => {
+                                let mut conf = appconfig.write();
+                                let channel_conf = &mut conf.power_supply_channel(&id, ch);
+                                channel_conf.current = new_current;
 
-                            conf.save();
-                            port.set_voltage(ch, new_voltage).await
-                        }
-                        PowerSupplyAction::SetCurrent(ch, new_current) => {
-                            let mut conf = appconfig.write();
-                            let channel_conf = &mut conf.power_supply_channel(&id, ch);
-                            channel_conf.current = new_current;
-
-                            if channel_conf.auto_vrange {
-                                if let Some(vrange) =
-                                    auto_vrange(ch, channel_conf.voltage, channel_conf.current)
-                                {
-                                    channel_conf.vrange = vrange;
-                                    port.set_vrange(ch, channel_conf.vrange).await.unwrap();
+                                if channel_conf.auto_vrange {
+                                    if let Some(vrange) =
+                                        auto_vrange(ch, channel_conf.voltage, channel_conf.current)
+                                    {
+                                        channel_conf.vrange = vrange;
+                                        port.set_vrange(ch, channel_conf.vrange).await.unwrap();
+                                    }
                                 }
+
+                                conf.save();
+                                port.set_current(ch, new_current).await
                             }
+                            PowerSupplyAction::RenameChannel(ch, new_name) => {
+                                appconfig
+                                    .write()
+                                    .power_supply_channel(&id, ch)
+                                    .name
+                                    .clone_from(&new_name);
+                                appconfig.write().save();
+                                Ok(())
+                            }
+                            PowerSupplyAction::SetMultiChannel(channel, behaviour) => {
+                                match behaviour {
+                                    MultiChannelOn::Disabled => {
+                                        appconfig
+                                            .write()
+                                            .power_supply_channel(&id, channel)
+                                            .multi_on
+                                            .enabled = false;
+                                    }
+                                    MultiChannelOn::Delay(delay_ms) => {
+                                        appconfig
+                                            .write()
+                                            .power_supply_channel(&id, channel)
+                                            .multi_on = MultiOn {
+                                            enabled: true,
+                                            delay_ms,
+                                        };
+                                    }
+                                };
+                                appconfig.write().save();
 
-                            conf.save();
-                            port.set_current(ch, new_current).await
-                        }
-                        PowerSupplyAction::RenameChannel(ch, new_name) => {
-                            appconfig
-                                .write()
-                                .power_supply_channel(&id, ch)
-                                .name
-                                .clone_from(&new_name);
-                            appconfig.write().save();
-                            Ok(())
-                        }
-                        PowerSupplyAction::SetMultiChannel(channel, behaviour) => {
-                            match behaviour {
-                                MultiChannelOn::Disabled => {
-                                    appconfig
-                                        .write()
-                                        .power_supply_channel(&id, channel)
-                                        .multi_on
-                                        .enabled = false;
-                                }
-                                MultiChannelOn::Delay(delay_ms) => {
-                                    appconfig
-                                        .write()
-                                        .power_supply_channel(&id, channel)
-                                        .multi_on = MultiOn {
-                                        enabled: true,
-                                        delay_ms,
-                                    };
-                                }
-                            };
-                            appconfig.write().save();
+                                port.multichannel_on_setup(channel, behaviour).await
+                            }
+                            PowerSupplyAction::SetVRange(channel, vrange) => {
+                                appconfig.write().power_supply_channel(&id, channel).vrange =
+                                    vrange;
+                                appconfig.write().save();
+                                port.set_vrange(channel, vrange).await
+                            }
+                            PowerSupplyAction::SetAutoVRange(channel, enable) => {
+                                appconfig
+                                    .write()
+                                    .power_supply_channel(&id, channel)
+                                    .auto_vrange = enable;
+                                appconfig.write().save();
+                                Ok(())
+                            }
+                            PowerSupplyAction::SetVoltageTracking(config) => {
+                                appconfig.write().power_supply(&id).voltage_tracking =
+                                    config.clone().into();
+                                appconfig.write().save();
+                                port.set_voltage_tracking(config).await.unwrap();
+                                state.write().voltage_tracking =
+                                    Some(port.get_voltage_tracking().await.unwrap());
+                                Ok(())
+                            }
+                            PowerSupplyAction::SetOvervoltageTrip(channel, voltage) => {
+                                appconfig
+                                    .write()
+                                    .power_supply_channel(&id, channel)
+                                    .overvoltage_trip = voltage;
+                                appconfig.write().save();
+                                port.set_overvoltage_trip(channel, voltage).await
+                            }
+                            PowerSupplyAction::SetOvercurrentTrip(channel, current) => {
+                                appconfig
+                                    .write()
+                                    .power_supply_channel(&id, channel)
+                                    .overcurrent_trip = current;
+                                appconfig.write().save();
+                                port.set_overcurrent_trip(channel, current).await
+                            }
+                            PowerSupplyAction::Reconfigure => {
+                                port.all_channel_off().await.unwrap();
 
-                            port.multichannel_on_setup(channel, behaviour).await
-                        }
-                        PowerSupplyAction::SetVRange(channel, vrange) => {
-                            appconfig.write().power_supply_channel(&id, channel).vrange = vrange;
-                            appconfig.write().save();
-                            port.set_vrange(channel, vrange).await
-                        }
-                        PowerSupplyAction::SetAutoVRange(channel, enable) => {
-                            appconfig
-                                .write()
-                                .power_supply_channel(&id, channel)
-                                .auto_vrange = enable;
-                            appconfig.write().save();
-                            Ok(())
-                        }
-                        PowerSupplyAction::SetVoltageTracking(config) => {
-                            appconfig.write().power_supply(&id).voltage_tracking =
-                                config.clone().into();
-                            appconfig.write().save();
-                            port.set_voltage_tracking(config).await.unwrap();
-                            state.write().voltage_tracking =
-                                Some(port.get_voltage_tracking().await.unwrap());
-                            Ok(())
-                        }
-                        PowerSupplyAction::SetOvervoltageTrip(channel, voltage) => {
-                            appconfig
-                                .write()
-                                .power_supply_channel(&id, channel)
-                                .overvoltage_trip = voltage;
-                            appconfig.write().save();
-                            port.set_overvoltage_trip(channel, voltage).await
-                        }
-                        PowerSupplyAction::SetOvercurrentTrip(channel, current) => {
-                            appconfig
-                                .write()
-                                .power_supply_channel(&id, channel)
-                                .overcurrent_trip = current;
-                            appconfig.write().save();
-                            port.set_overcurrent_trip(channel, current).await
-                        }
-                        PowerSupplyAction::Reconfigure => {
-                            port.all_channel_off().await.unwrap();
+                                let power_supply = appconfig.write().power_supply(&id).clone();
 
-                            let power_supply = appconfig.write().power_supply(&id).clone();
-
-                            port.set_voltage_tracking(
-                                VoltageTracking::try_from(power_supply.voltage_tracking).unwrap(),
-                            )
-                            .await
-                            .unwrap();
-
-                            state.write().voltage_tracking =
-                                Some(port.get_voltage_tracking().await.unwrap());
-
-                            for (ch, channel_config) in power_supply.channels.iter().enumerate() {
-                                let ch = ch as u8;
-                                port.set_vrange(ch, channel_config.vrange).await.unwrap();
-                                port.set_voltage(ch, channel_config.voltage).await.unwrap();
-                                port.set_current(ch, channel_config.current).await.unwrap();
-                                port.set_overvoltage_trip(ch, channel_config.overvoltage_trip)
-                                    .await
-                                    .unwrap();
-                                port.set_overcurrent_trip(ch, channel_config.overcurrent_trip)
-                                    .await
-                                    .unwrap();
-                                port.multichannel_on_setup(
-                                    ch,
-                                    match channel_config.multi_on.enabled {
-                                        true => {
-                                            MultiChannelOn::Delay(channel_config.multi_on.delay_ms)
-                                        }
-                                        false => MultiChannelOn::Disabled,
-                                    },
+                                port.set_voltage_tracking(
+                                    VoltageTracking::try_from(power_supply.voltage_tracking)
+                                        .unwrap(),
                                 )
                                 .await
                                 .unwrap();
+
+                                state.write().voltage_tracking =
+                                    Some(port.get_voltage_tracking().await.unwrap());
+
+                                for (ch, channel_config) in power_supply.channels.iter().enumerate()
+                                {
+                                    let ch = ch as u8;
+                                    port.set_vrange(ch, channel_config.vrange).await.unwrap();
+                                    port.set_voltage(ch, channel_config.voltage).await.unwrap();
+                                    port.set_current(ch, channel_config.current).await.unwrap();
+                                    port.set_overvoltage_trip(ch, channel_config.overvoltage_trip)
+                                        .await
+                                        .unwrap();
+                                    port.set_overcurrent_trip(ch, channel_config.overcurrent_trip)
+                                        .await
+                                        .unwrap();
+                                    port.multichannel_on_setup(
+                                        ch,
+                                        match channel_config.multi_on.enabled {
+                                            true => MultiChannelOn::Delay(
+                                                channel_config.multi_on.delay_ms,
+                                            ),
+                                            false => MultiChannelOn::Disabled,
+                                        },
+                                    )
+                                    .await
+                                    .unwrap();
+                                }
+
+                                Ok(())
                             }
+                            PowerSupplyAction::TripReset => port.trip_reset().await,
+                        };
 
-                            Ok(())
+                        if let Err(err) = res {
+                            error!("Error: {}", err);
+                            break;
                         }
-                        PowerSupplyAction::TripReset => port.trip_reset().await,
-                    };
-
-                    if let Err(err) = res {
-                        error!("Error: {}", err);
-                        break;
                     }
+                    match port.read_channels().await {
+                        Ok(new) => state.write().channels = new,
+                        Err(_) => break,
+                    };
                 }
-                match port.read_channels().await {
-                    Ok(new) => state.write().channels = new,
-                    Err(_) => break,
-                };
             }
         }
     });

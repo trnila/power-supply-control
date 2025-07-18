@@ -17,10 +17,10 @@ pub fn InputUnitComponent(
     onsubmit: EventHandler<Option<f32>>,
     prepend: Option<String>,
 ) -> Element {
-    let value = match value {
+    let mut value = use_signal(|| match value {
         Some(val) => format!("{val}"),
         None => "".to_string(),
-    };
+    });
 
     rsx! {
         form {
@@ -42,6 +42,7 @@ pub fn InputUnitComponent(
                 name: "value",
                 autocomplete: "off",
                 value: value,
+                oninput: move |event| value.set(event.value()),
             }
             span {
                 class: "input-group-text",
