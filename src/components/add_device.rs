@@ -53,7 +53,10 @@ pub fn AddDeviceComponent() -> Element {
         form {
             class: "input-group",
             onsubmit: move |evt| {
-                let index:usize = evt.data.values()["index"].as_value().parse().unwrap();
+                let index:usize = match evt.data.values().get("index") {
+                    Some(idx) => idx.as_value().parse().unwrap(),
+                    None => return,
+                };
                 let port = &ports.read()[index];
                 appconfig.write().data.power_supplies.push(PowerSupplyConfig{
                     vid: port.vid,
