@@ -24,7 +24,15 @@ impl AppConfig {
         Self { path, data }
     }
 
-    pub fn power_supply(&mut self, id: &str) -> &mut PowerSupplyConfig {
+    pub fn power_supply(&mut self, id: &str) -> &PowerSupplyConfig {
+        self.data
+            .power_supplies
+            .iter()
+            .find(|config| config.id == id)
+            .unwrap()
+    }
+
+    pub fn power_supply_mut(&mut self, id: &str) -> &mut PowerSupplyConfig {
         self.data
             .power_supplies
             .iter_mut()
@@ -33,7 +41,7 @@ impl AppConfig {
     }
 
     pub fn power_supply_channel(&mut self, id: &str, ch: u8) -> &mut ChannelConfig {
-        &mut self.power_supply(id).channels[ch as usize]
+        &mut self.power_supply_mut(id).channels[ch as usize]
     }
 
     pub fn save(&mut self) {

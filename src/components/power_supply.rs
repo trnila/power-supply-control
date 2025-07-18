@@ -111,10 +111,7 @@ async fn handle_action(
                         .enabled = false;
                 }
                 MultiChannelOn::Delay(delay_ms) => {
-                    appconfig
-                        .write()
-                        .power_supply_channel(id, channel)
-                        .multi_on = MultiOn {
+                    appconfig.write().power_supply_channel(id, channel).multi_on = MultiOn {
                         enabled: true,
                         delay_ms,
                     };
@@ -138,7 +135,7 @@ async fn handle_action(
             Ok(())
         }
         PowerSupplyAction::SetVoltageTracking(config) => {
-            appconfig.write().power_supply(id).voltage_tracking = config.clone().into();
+            appconfig.write().power_supply_mut(id).voltage_tracking = config.clone().into();
             appconfig.write().save();
             port.set_voltage_tracking(config).await.unwrap();
             state.write().voltage_tracking = Some(port.get_voltage_tracking().await.unwrap());
@@ -163,7 +160,7 @@ async fn handle_action(
         PowerSupplyAction::Reconfigure => {
             port.all_channel_off().await.unwrap();
 
-            let power_supply = appconfig.write().power_supply(id).clone();
+            let power_supply = appconfig.write().power_supply_mut(id).clone();
 
             port.set_voltage_tracking(
                 VoltageTracking::try_from(power_supply.voltage_tracking).unwrap(),
@@ -205,7 +202,7 @@ async fn handle_action(
 pub fn PowerSupplyComponent(id: String) -> Element {
     let edit_mode = use_context::<Signal<EditMode>>();
     let mut appconfig = use_context::<Signal<AppConfig>>();
-    let config = appconfig.write().power_supply(&id).clone();
+    let config = appconfig().power_supply(&id).clone();
     let mut state = use_signal(|| PowerSupply {
         name: config.name.clone(),
         channels: Vec::new(),
@@ -234,10 +231,11 @@ pub fn PowerSupplyComponent(id: String) -> Element {
 
     let sync_task = use_coroutine(move |mut rx: UnboundedReceiver<PowerSupplyAction>| {
         let id = id.clone();
-        let config = config.clone();
         async move {
             loop {
                 state.write().connected = false;
+                let mut appconfig = use_context::<Signal<AppConfig>>();
+                let config = appconfig.write().power_supply_mut(&id).clone();
                 let port = Mx100qp::open(&config.clone()).await;
 
                 if let Err(err) = port {
@@ -296,7 +294,7 @@ pub fn PowerSupplyComponent(id: String) -> Element {
                     EditableTextComponent {
                         onsubmit: move |new_name: String| {
                             state.write().name.clone_from(&new_name);
-                            appconfig.write().power_supply(&id1).name.clone_from(&new_name);
+                            appconfig.write().power_supply_mut(&id1).name.clone_from(&new_name);
                             appconfig.write().save();
                         },
                         disabled: !edit_mode.read().0,
