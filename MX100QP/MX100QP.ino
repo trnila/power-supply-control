@@ -1,5 +1,8 @@
 #include <avr/boot.h>
 
+// must match USB serial number of USB UART on the arduino
+#define SERIAL_NUMBER "75135303739351615292"
+
 #define CHANNELS 4
 #define VOLTAGE_TRACKINGS 4
 
@@ -90,10 +93,7 @@ void loop() {
   if (Serial.available()) {
     String i = Serial.readStringUntil('\n');
     if(i.startsWith("*IDN?")) {
-      Serial.print("supply, 100MQ, ");
-      for(int i = 0; i < 0xf; i++) {
-        Serial.print(boot_signature_byte_get(i));
-      }
+      Serial.print("supply, 100MQ, " SERIAL_NUMBER);
       Serial.println(", x");
     } else if(i.startsWith("OPALL")) {
       if(i[6] == '1') {
