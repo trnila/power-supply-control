@@ -1,9 +1,9 @@
 use anyhow::Result;
-use vergen::EmitBuilder;
+use vergen_gitcl::{Emitter, GitclBuilder};
 
 pub fn main() -> Result<()> {
-    EmitBuilder::builder()
-        .git_describe(true, true, None)
+    Emitter::default()
+        .add_instructions(&GitclBuilder::all_git()?)?
         .emit()?;
     Ok(())
 }
