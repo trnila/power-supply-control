@@ -1,5 +1,7 @@
 use dioxus::prelude::*;
 
+use crate::components::modal::ModalComponent;
+
 #[derive(Clone, Copy, PartialEq)]
 pub struct EditMode(pub bool);
 
@@ -34,52 +36,18 @@ pub fn EditModeComponent() -> Element {
             }
         }
 
-        div {
-            class: "modal fade show",
-            class: if *show.read() {"d-block"},
-            div {
-                class: "modal-dialog",
-                div {
-                    class: "modal-content",
-                    div {
-                        class: "modal-header",
-                        h1 {
-                            class: "modal-title fs-5",
-                            "Enable editing?"
-                        }
-                    }
-
-                    div {
-                        class: "modal-body",
-                        "Enabling edit mode may "
-                        strong {"damage"}
-                        " connected hardware if wrong parameters are configured."
-                    }
-
-                    div {
-                        class: "modal-footer",
-                        button {
-                            class: "btn btn-secondary",
-                            onclick: move |_| *show.write() = false,
-                            "Cancel"
-                        }
-                        button {
-                            class: "btn btn-danger",
-                            onclick: move |_| {
-                                *edit_mode.write() = EditMode(true);
-                                *show.write() = false;
-                            },
-                            "I know what I am doing, enable edit mode"
-                        }
-                    }
-                }
-            }
-        }
-
-        if *show.read() {
-            div {
-                class: "modal-backdrop fade show",
-            }
+        ModalComponent {
+            show: show(),
+            header: "Enable editing?",
+            on_ok: move |_| {
+                *edit_mode.write() = EditMode(true);
+                *show.write() = false;
+            },
+            on_cancel: move |_| {
+                *show.write() = false;
+            },
+            confirm: "I know what I am doing, enable edit mode",
+            "Enabling edit mode may " strong {"damage"} " connected hardware if wrong parameters are configured."
         }
     }
 }
