@@ -57,7 +57,9 @@ pub fn AddDeviceComponent() -> Element {
                     Some(idx) => idx.as_value().parse().unwrap(),
                     None => return,
                 };
-                let port = &ports.read()[index];
+                let mut usb_ports = ports.write();
+
+                let port = &usb_ports[index];
                 appconfig.write().data.power_supplies.push(PowerSupplyConfig{
                     vid: port.vid,
                     pid: port.pid,
@@ -82,6 +84,7 @@ pub fn AddDeviceComponent() -> Element {
                     }).collect(),
                 });
                 appconfig.write().save();
+                *usb_ports = scan_usb();
             },
 
             button {
