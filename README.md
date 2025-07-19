@@ -1,5 +1,7 @@
 # Power supply control
-Power supply control GUI for AIM-TTI MX100QP over USB UART.
+Power supply control desktop GUI written in Dioxus for AIM-TTI MX100QP over USB UART.
+
+<img src="assets/power-supply-control.webp">
 
 
 ## Build & Run
