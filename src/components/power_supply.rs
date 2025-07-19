@@ -243,7 +243,7 @@ pub fn PowerSupplyComponent(id: String) -> Element {
                 let port = Mx100qp::open(&config.clone()).await;
 
                 if let Err(err) = port {
-                    error!("failed to open port: {:?}", err);
+                    error!("failed to open port: {err:?}");
                     tokio::time::sleep(Duration::from_millis(1000)).await;
                     continue;
                 }
@@ -270,12 +270,12 @@ pub fn PowerSupplyComponent(id: String) -> Element {
                     if let Ok(Some(msg)) =
                         tokio::time::timeout(Duration::from_millis(100), rx.next()).await
                     {
-                        info!("{:?}", msg);
+                        info!("{msg:?}");
                         let res =
                             handle_action(msg, &mut appconfig, &mut port, &mut state, &id).await;
 
                         if let Err(err) = res {
-                            error!("Error: {}", err);
+                            error!("Error: {err}");
                             break;
                         }
                     }

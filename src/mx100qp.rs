@@ -298,7 +298,7 @@ impl Mx100qp {
             let ovp = if voltage_tracking == VoltageTracking::CH0_1AndCH2_3 && i == 2 {
                 None
             } else {
-                self.protocol.send(format!("OVP{}?", i)).await?;
+                self.protocol.send(format!("OVP{i}?")).await?;
                 match self
                     .protocol
                     .next()
@@ -316,7 +316,7 @@ impl Mx100qp {
             let ocp = if voltage_tracking == VoltageTracking::CH0_1AndCH2_3 && i == 2 {
                 None
             } else {
-                self.protocol.send(format!("OCP{}?", i)).await?;
+                self.protocol.send(format!("OCP{i}?")).await?;
                 match self
                     .protocol
                     .next()

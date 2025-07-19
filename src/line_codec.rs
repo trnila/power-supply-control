@@ -20,7 +20,7 @@ impl Decoder for LineCodec {
                     trace!("Received {received}");
                     Ok(Some(received))
                 }
-                Err(_) => Err(io::Error::new(io::ErrorKind::Other, "Invalid String")),
+                Err(_) => Err(io::Error::other("Invalid String")),
             };
         }
         Ok(None)

@@ -14,7 +14,7 @@ impl AppConfig {
         let data = match std::fs::read_to_string(&path) {
             Ok(content) => serde_json::from_str(&content).unwrap(),
             Err(err) => {
-                warn!("Failed to load global config {:?}: {}", path, err);
+                warn!("Failed to load global config {path:?}: {err}");
                 Config {
                     power_supplies: Vec::new(),
                 }
