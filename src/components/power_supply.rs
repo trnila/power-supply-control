@@ -2,6 +2,7 @@ use std::time::Duration;
 
 use crate::components::channel_delay::ChannelDelayComponent;
 use crate::components::edit_mode::EditMode;
+use crate::components::modal::ModalComponent;
 use crate::config::AppConfig;
 use crate::config::MultiOn;
 use crate::mx100qp::auto_vrange;
@@ -200,6 +201,7 @@ async fn handle_action(
 
 #[component]
 pub fn PowerSupplyComponent(id: String) -> Element {
+    let mut show_delete_modal = use_signal(|| false);
     let edit_mode = use_context::<Signal<EditMode>>();
     let mut appconfig = use_context::<Signal<AppConfig>>();
     let config = appconfig().power_supply(&id).clone();
@@ -212,6 +214,8 @@ pub fn PowerSupplyComponent(id: String) -> Element {
 
     let voltage_tracking = config.voltage_tracking;
     let id1 = id.clone();
+    let id2 = id.clone();
+    let name = config.name.clone();
     let channels = config.channels.clone();
 
     let voltage_trackings = ["V1 V2 V3 V4", "V1=V2 V3 V4", "V1 V2 V3=V4", "V1=V2 V3=V4"];
@@ -299,6 +303,14 @@ pub fn PowerSupplyComponent(id: String) -> Element {
                         },
                         disabled: !edit_mode.read().0,
                         text: state.read().name.clone(),
+                    }
+                    if edit_mode().0 {
+                        span {
+                            dangerous_inner_html: iconify::svg!("tabler:trash"),
+                            class: "ms-1 text-danger",
+                            cursor: "pointer",
+                            onclick: move |_| *show_delete_modal.write() = true,
+                        }
                     }
                 }
                 if state.read().connected {
@@ -393,6 +405,21 @@ pub fn PowerSupplyComponent(id: String) -> Element {
                     "Device not connected."
                 }
             }
+        }
+
+        ModalComponent {
+            show: show_delete_modal(),
+            header: "Delete power supply?",
+            on_ok: move |_| {
+                appconfig.write().data.power_supplies.retain(|x| x.id != id2);
+                appconfig.write().save();
+                *show_delete_modal.write() = false;
+            },
+            on_cancel: move |_| {
+                *show_delete_modal.write() = false;
+            },
+            confirm: "Delete",
+            "Do you really want to delete " strong {{name}} " power supply? This will delete all its channels and settings."
         }
     }
 }
