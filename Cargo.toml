@@ -37,3 +37,10 @@ int-enum = "1.2.0"
 [build-dependencies]
 vergen-gitcl = "1.0.8"
 anyhow = "1.0.100"
+image = "0.25.9"
+
+[target.'cfg(windows)'.build-dependencies]
+winres = "0.1"
+
+[dev-dependencies]
+image = { version = "0.25.9", default-features = false, features = ["png", "ico"] }

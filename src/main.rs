@@ -10,7 +10,7 @@ use dioxus::{
     desktop::{Config, WindowBuilder},
     prelude::*,
 };
-use dioxus_desktop::LogicalSize;
+use dioxus_desktop::{tao, LogicalSize};
 use log::{info, LevelFilter};
 use log4rs::{
     append::{
@@ -34,6 +34,14 @@ fn appconfig_default() -> Config {
         WindowBuilder::new()
             .with_maximized(false)
             .with_title("Power supply control")
+            .with_window_icon(Some(
+                tao::window::Icon::from_rgba(
+                    include_bytes!(env!("ICO_BIN_PATH")).to_vec(),
+                    env!("ICO_BIN_WIDTH").parse().unwrap(),
+                    env!("ICO_BIN_HEIGHT").parse().unwrap(),
+                )
+                .unwrap(),
+            ))
             .with_min_inner_size(LogicalSize::new(1280, 768)),
     )
 }
