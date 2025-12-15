@@ -235,10 +235,10 @@ pub fn PowerSupplyComponent(id: String) -> Element {
 
     let sync_task = use_coroutine(move |mut rx: UnboundedReceiver<PowerSupplyAction>| {
         let id = id.clone();
+        let mut appconfig = appconfig;
         async move {
             loop {
                 state.write().connected = false;
-                let mut appconfig = use_context::<Signal<AppConfig>>();
                 let config = appconfig.write().power_supply_mut(&id).clone();
                 let port = Mx100qp::open(&config.clone()).await;
 
