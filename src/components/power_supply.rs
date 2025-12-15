@@ -289,12 +289,9 @@ pub fn PowerSupplyComponent(id: String) -> Element {
     });
 
     rsx! {
-        div {
-            class: "card mb-1",
-            div {
-                class: "card-header d-flex gap-3",
-                div {
-                    class: "flex-grow-1",
+        div { class: "card mb-1",
+            div { class: "card-header d-flex gap-3",
+                div { class: "flex-grow-1",
                     EditableTextComponent {
                         onsubmit: move |new_name: String| {
                             state.write().name.clone_from(&new_name);
@@ -314,8 +311,7 @@ pub fn PowerSupplyComponent(id: String) -> Element {
                     }
                 }
                 if state.read().connected {
-                    div {
-                        class: "d-flex gap-1",
+                    div { class: "d-flex gap-1",
 
                         if edit_mode.read().0 {
                             span {
@@ -331,79 +327,74 @@ pub fn PowerSupplyComponent(id: String) -> Element {
                             "Trip rst"
                         }
 
-                    if edit_mode.read().0 {
-                        select {
-                            class: "form-control form-control-sm w-auto",
-                            onchange: move |evt| {
-                                sync_task.send(PowerSupplyAction::SetVoltageTracking(evt.data.value().parse::<u8>().unwrap().try_into().unwrap()))
-                            },
-                            for (i, label) in voltage_trackings.iter().enumerate() {
-                                option {
-                                    value: "{i}",
-                                    selected: voltage_tracking == i as u8,
-                                    {label}
-                                }
-                            }
-                        }
-                    }
-
-                    div {
-                        class: "input-group input-group-sm w-auto",
-                        span {
-                            class: "input-group-text",
-                            "Delayed MultiON"
-                        }
-                        for (channel, channel_conf) in channels.iter().enumerate() {
-                            ChannelDelayComponent{
-                                channel: channel as u8,
-                                enabled: channel_conf.multi_on.enabled,
-                                delay_ms: channel_conf.multi_on.delay_ms
-                            }
-                        }
-                        button {
-                            class: "btn btn-sm btn-success",
-                            onclick: move |_| sync_task.send(PowerSupplyAction::On(ChannelSelection::AllChannels)),
-                            "ON"
-                        },
-                        button {
-                            class: "btn btn-sm btn-danger",
-                            onclick: move |_| sync_task.send(PowerSupplyAction::Off(ChannelSelection::AllChannels)),
-                            "OFF"
-                        },
-                    }
-                }
-                }
-            }
-            if state.read().connected {
-                div {
-                    class: "card-body",
-
-                    if !errors.is_empty() {
-                        div {
-                            class: "alert alert-danger mt-1 p-0 mb-1",
-                            ul {
-                                class: "mt-1 mb-1",
-                                for error in errors {
-                                    li {
-                                        {error}
+                        if edit_mode.read().0 {
+                            select {
+                                class: "form-control form-control-sm w-auto",
+                                onchange: move |evt| {
+                                    sync_task
+                                        .send(
+                                            PowerSupplyAction::SetVoltageTracking(
+                                                evt.data.value().parse::<u8>().unwrap().try_into().unwrap(),
+                                            ),
+                                        )
+                                },
+                                for (i , label) in voltage_trackings.iter().enumerate() {
+                                    option {
+                                        value: "{i}",
+                                        selected: voltage_tracking == i as u8,
+                                        {label}
                                     }
                                 }
                             }
                         }
+
+                        div { class: "input-group input-group-sm w-auto",
+                            span { class: "input-group-text", "Delayed MultiON" }
+                            for (channel , channel_conf) in channels.iter().enumerate() {
+                                ChannelDelayComponent {
+                                    channel: channel as u8,
+                                    enabled: channel_conf.multi_on.enabled,
+                                    delay_ms: channel_conf.multi_on.delay_ms,
+                                }
+                            }
+                            button {
+                                class: "btn btn-sm btn-success",
+                                onclick: move |_| sync_task.send(PowerSupplyAction::On(ChannelSelection::AllChannels)),
+                                "ON"
+                            }
+                            button {
+                                class: "btn btn-sm btn-danger",
+                                onclick: move |_| sync_task.send(PowerSupplyAction::Off(ChannelSelection::AllChannels)),
+                                "OFF"
+                            }
+                        }
+                    }
+                }
+            }
+            if state.read().connected {
+                div { class: "card-body",
+
+                    if !errors.is_empty() {
+                        div { class: "alert alert-danger mt-1 p-0 mb-1",
+                            ul { class: "mt-1 mb-1",
+                                for error in errors {
+                                    li { {error} }
+                                }
+                            }
+                        }
                     }
 
-                    div {
-                        class: "d-flex gap-1",
-                        for (i, channel) in state.read().channels.iter().enumerate() {
-                            ChannelComponent{channel: channel.clone(), config: channels[i].clone()}
+                    div { class: "d-flex gap-1",
+                        for (i , channel) in state.read().channels.iter().enumerate() {
+                            ChannelComponent {
+                                channel: channel.clone(),
+                                config: channels[i].clone(),
+                            }
                         }
                     }
                 }
             } else {
-                div {
-                    class: "text-center",
-                    "Device not connected."
-                }
+                div { class: "text-center", "Device not connected." }
             }
         }
 
@@ -419,7 +410,9 @@ pub fn PowerSupplyComponent(id: String) -> Element {
                 *show_delete_modal.write() = false;
             },
             confirm: "Delete",
-            "Do you really want to delete " strong {{name}} " power supply? This will delete all its channels and settings."
+            "Do you really want to delete "
+            strong { {name} }
+            " power supply? This will delete all its channels and settings."
         }
     }
 }

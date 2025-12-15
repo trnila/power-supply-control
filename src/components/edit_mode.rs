@@ -11,8 +11,7 @@ pub fn EditModeComponent() -> Element {
     let mut edit_mode = use_context::<Signal<EditMode>>();
 
     rsx! {
-        div {
-            class: "form-check form-switch",
+        div { class: "form-check form-switch",
             input {
                 class: "form-check-input",
                 style: "cursor: pointer",
@@ -32,7 +31,7 @@ pub fn EditModeComponent() -> Element {
                 class: "form-check-label",
                 style: "cursor: pointer",
                 r#for: "edit-mode-switch",
-                "Edit mode",
+                "Edit mode"
             }
         }
 
@@ -47,7 +46,9 @@ pub fn EditModeComponent() -> Element {
                 *show.write() = false;
             },
             confirm: "I know what I am doing, enable edit mode",
-            "Enabling edit mode may " strong {"damage"} " connected hardware if wrong parameters are configured."
+            "Enabling edit mode may "
+            strong { "damage" }
+            " connected hardware if wrong parameters are configured."
         }
     }
 }

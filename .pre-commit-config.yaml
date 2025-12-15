@@ -10,3 +10,11 @@ repos:
    - id: fmt
    - id: cargo-check
    - id: clippy
+- repo: local
+  hooks:
+    - id: dioxus-fmt
+      name: dioxus formatter
+      entry: dx fmt
+      language: system
+      types: [rust]
+      pass_filenames: false

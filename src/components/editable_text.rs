@@ -23,10 +23,7 @@ pub fn EditableTextComponent(
                     autocomplete: "off",
                     value: text,
                 }
-                button {
-                    class: "btn btn-sm btn-success",
-                    "OK"
-                }
+                button { class: "btn btn-sm btn-success", "OK" }
             }
         } else {
             span {

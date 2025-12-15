@@ -20,20 +20,17 @@ pub fn AppComponent() -> Element {
     let edit_mode = use_context_provider(|| Signal::new(EditMode(false)));
 
     rsx! {
-        style { {include_str!("../../assets/bootstrap.css")} },
-        style { {include_str!("../../assets/main.css")} },
+        style { {include_str!("../../assets/bootstrap.css")} }
+        style { {include_str!("../../assets/main.css")} }
 
-        div {
-            class: "d-flex flex-row-reverse",
-            EditModeComponent {}
-        }
+        div { class: "d-flex flex-row-reverse", EditModeComponent {} }
 
         for config in *config.read().data.power_supplies {
-            PowerSupplyComponent {id: config.id.clone()}
+            PowerSupplyComponent { id: config.id.clone() }
         }
 
         if edit_mode.read().0 {
-            AddDeviceComponent{}
+            AddDeviceComponent {}
         }
     }
 }

@@ -10,28 +10,16 @@ pub fn ModalComponent(
     on_cancel: EventHandler,
 ) -> Element {
     rsx! {
-        div {
-            class: "modal fade show",
-            class: if show {"d-block"},
-            div {
-                class: "modal-dialog",
-                div {
-                    class: "modal-content",
-                    div {
-                        class: "modal-header",
-                        h1 {
-                            class: "modal-title fs-5",
-                            {header}
-                        }
+        div { class: "modal fade show", class: if show { "d-block" },
+            div { class: "modal-dialog",
+                div { class: "modal-content",
+                    div { class: "modal-header",
+                        h1 { class: "modal-title fs-5", {header} }
                     }
 
-                    div {
-                        class: "modal-body",
-                        {children}
-                    }
+                    div { class: "modal-body", {children} }
 
-                    div {
-                        class: "modal-footer",
+                    div { class: "modal-footer",
                         button {
                             class: "btn btn-secondary",
                             onclick: move |_| on_cancel(()),
@@ -48,9 +36,7 @@ pub fn ModalComponent(
         }
 
         if show {
-            div {
-                class: "modal-backdrop fade show",
-            }
+            div { class: "modal-backdrop fade show" }
         }
     }
 }

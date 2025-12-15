@@ -29,10 +29,7 @@ pub fn InputUnitComponent(
                 onsubmit(parse_input(&evt.data.values()["value"].as_value()));
             },
             if let Some(prepend) = prepend {
-                span {
-                    class: "input-group-text",
-                    "{prepend}"
-                }
+                span { class: "input-group-text", "{prepend}" }
             }
             input {
                 class: "form-control form-control-sm text-end",
@@ -41,18 +38,11 @@ pub fn InputUnitComponent(
                 step: 0.001,
                 name: "value",
                 autocomplete: "off",
-                value: value,
+                value,
                 oninput: move |event| value.set(event.value()),
             }
-            span {
-                class: "input-group-text",
-                width: "30px",
-                "{unit}"
-            }
-            button {
-                class: "btn btn-sm btn-outline-secondary",
-                "Set"
-            }
+            span { class: "input-group-text", width: "30px", "{unit}" }
+            button { class: "btn btn-sm btn-outline-secondary", "Set" }
         }
     }
 }

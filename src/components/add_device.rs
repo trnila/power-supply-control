@@ -53,36 +53,41 @@ pub fn AddDeviceComponent() -> Element {
         form {
             class: "input-group",
             onsubmit: move |evt| {
-                let index:usize = match evt.data.values().get("index") {
+                let index: usize = match evt.data.values().get("index") {
                     Some(idx) => idx.as_value().parse().unwrap(),
                     None => return,
                 };
                 let mut usb_ports = ports.write();
-
                 let port = &usb_ports[index];
-                appconfig.write().data.power_supplies.push(PowerSupplyConfig{
-                    vid: port.vid,
-                    pid: port.pid,
-                    serial_number: port.serial_number.clone(),
-                    id: port.serial_number.clone().unwrap(),
-                    name: "Power Supply MX100QP".to_string(),
-                    voltage_tracking: 0,
-                    channels: (1..=4).map(|ch| {
-                        ChannelConfig{
-                            name: format!("Channel {ch}"),
-                            voltage: 0.0,
-                            current: 0.0,
-                            vrange: 1,
-                            auto_vrange: true,
-                            overcurrent_trip: None,
-                            overvoltage_trip: None,
-                            multi_on: MultiOn {
-                                enabled: true,
-                                delay_ms: 0,
-                            },
-                        }
-                    }).collect(),
-                });
+                appconfig
+                    .write()
+                    .data
+                    .power_supplies
+                    .push(PowerSupplyConfig {
+                        vid: port.vid,
+                        pid: port.pid,
+                        serial_number: port.serial_number.clone(),
+                        id: port.serial_number.clone().unwrap(),
+                        name: "Power Supply MX100QP".to_string(),
+                        voltage_tracking: 0,
+                        channels: (1..=4)
+                            .map(|ch| {
+                                ChannelConfig {
+                                    name: format!("Channel {ch}"),
+                                    voltage: 0.0,
+                                    current: 0.0,
+                                    vrange: 1,
+                                    auto_vrange: true,
+                                    overcurrent_trip: None,
+                                    overvoltage_trip: None,
+                                    multi_on: MultiOn {
+                                        enabled: true,
+                                        delay_ms: 0,
+                                    },
+                                }
+                            })
+                            .collect(),
+                    });
                 appconfig.write().save();
                 *usb_ports = scan_usb();
             },
@@ -92,24 +97,15 @@ pub fn AddDeviceComponent() -> Element {
                 onclick: move |evt| {
                     evt.prevent_default();
                     *ports.write() = scan_usb();
-
                 },
                 "Rescan USB"
             }
-            select {
-                class: "form-control form-control-sm",
-                name: "index",
-                for (i, port) in ports.read().iter().enumerate() {
-                    option {
-                        value: format!("{i}"),
-                        "{format_usb_port(port)}"
-                    }
+            select { class: "form-control form-control-sm", name: "index",
+                for (i , port) in ports.read().iter().enumerate() {
+                    option { value: format!("{i}"), "{format_usb_port(port)}" }
                 }
             }
-            button {
-                class: "btn btn-sm btn-success",
-                "Add"
-            }
+            button { class: "btn btn-sm btn-success", "Add" }
         }
     }
 }
