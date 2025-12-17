@@ -9,7 +9,7 @@ build = "build.rs"
 
 [dependencies]
 
-dioxus = { version = "0.6.3", features = ["desktop", "router"] }
+dioxus = { version = "0.6.3", features = ["desktop"] }
 
 # Debug
 tracing = "0.1.43"
