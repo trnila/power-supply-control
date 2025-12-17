@@ -33,6 +33,7 @@ anyhow = "1.0.100"
 iconify = "0.3.1"
 serde_json = "1.0.145"
 int-enum = "1.2.0"
+bitflags = "2.10.0"
 
 [build-dependencies]
 vergen-gitcl = "1.0.8"

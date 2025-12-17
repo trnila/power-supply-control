@@ -1,3 +1,4 @@
+use crate::mx100qp::LimitEventStatus;
 use crate::{
     components::{
         edit_mode::EditMode,
@@ -15,8 +16,16 @@ pub fn ChannelComponent(channel: Channel, config: ChannelConfig) -> Element {
     let edit_mode = use_context::<Signal<EditMode>>();
     let power_supply_action = use_coroutine_handle::<PowerSupplyAction>();
     let card_class = if channel.enabled { "success" } else { "danger" };
-
     let mut errors = Vec::new();
+
+    if channel.status.contains(LimitEventStatus::OVER_VOLTAGE_TRIP) {
+        errors.push("Over-Voltage trip (OVP)".to_string());
+    }
+
+    if channel.status.contains(LimitEventStatus::OVER_CURRENT_TRIP) {
+        errors.push("Over-Current trip (OCP)".to_string());
+    }
+
     if channel.voltage.set != config.voltage
         && channel.voltage_tracking != VoltageTrackingState::Slave
     {
