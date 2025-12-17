@@ -3973,6 +3973,7 @@ name = "power-supply-control"
 version = "0.0.0"
 dependencies = [
  "anyhow",
+ "bitflags 2.10.0",
  "bytes",
  "dioxus",
  "dioxus-desktop",

@@ -1,5 +1,6 @@
 use std::time::Duration;
 
+use bitflags::bitflags;
 use futures::{SinkExt, StreamExt};
 use int_enum::IntEnum;
 use log::{debug, error};
@@ -51,6 +52,19 @@ pub enum MultiChannelOn {
 
 pub struct Mx100qp {
     pub protocol: Framed<SerialStream, LineCodec>,
+    status: [LimitEventStatus; 4],
+}
+
+bitflags! {
+    #[derive(Debug, Clone, Copy, PartialEq, PartialOrd)]
+    pub struct LimitEventStatus: u8 {
+        const VOLTAGE_LIMIT = 1;
+        const CURRENT_LIMIT = 1 << 1;
+        const OVER_VOLTAGE_TRIP = 1 << 2;
+        const OVER_CURRENT_TRIP = 1 << 3;
+        const TEMPERATURE_TRIP = 1 << 4;
+        const FAULT_TRIP = 1 << 6;
+    }
 }
 
 pub struct VRange {
@@ -158,7 +172,10 @@ impl Mx100qp {
             }));
         }
 
-        Ok(Mx100qp { protocol })
+        Ok(Mx100qp {
+            protocol,
+            status: [LimitEventStatus::empty(); 4],
+        })
     }
 
     pub async fn set_voltage(&mut self, ch: u8, new_voltage: f32) -> Result<(), std::io::Error> {
@@ -279,7 +296,9 @@ impl Mx100qp {
     }
 
     pub async fn trip_reset(&mut self) -> Result<(), std::io::Error> {
-        self.protocol.send("TRIPRST".to_string()).await
+        self.protocol.send("TRIPRST".to_string()).await?;
+        self.status = [LimitEventStatus::empty(); 4];
+        Ok(())
     }
 
     pub async fn read_channels(&mut self) -> Result<Vec<Channel>, std::io::Error> {
@@ -287,7 +306,19 @@ impl Mx100qp {
 
         let voltage_tracking = self.get_voltage_tracking().await?;
 
-        for i in 1..=4 {
+        for i in 1..=4u8 {
+            // read status
+            self.protocol.send(format!("LSR{i}?")).await?;
+            let status = LimitEventStatus::from_bits(
+                self.protocol.next().await.unwrap()?.parse::<u8>().unwrap(),
+            )
+            .unwrap();
+
+            self.status[(i - 1) as usize] |= status;
+            let status = self.status[(i - 1) as usize];
+
+            error!("{i} {status:?}");
+
             self.protocol.send(format!("OP{i}?")).await?;
             let enabled = self.protocol.next().await.unwrap()? == "1";
 
@@ -337,6 +368,7 @@ impl Mx100qp {
                 index: i - 1,
                 overvoltage_trip: ovp,
                 overcurrent_trip: ocp,
+                status,
                 voltage: read_unit(&mut self.protocol, i, 'V').await?,
                 current: read_unit(&mut self.protocol, i, 'I').await?,
                 voltage_tracking: VoltageTrackingState::from_channel_and_config(
@@ -406,6 +438,7 @@ pub struct Channel {
     pub voltage: Unit,
     pub overvoltage_trip: Option<f32>,
     pub overcurrent_trip: Option<f32>,
+    pub status: LimitEventStatus,
     pub voltage_tracking: VoltageTrackingState,
 }
 
