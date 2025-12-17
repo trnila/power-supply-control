@@ -10,8 +10,8 @@ use dioxus::{
     desktop::{Config, WindowBuilder},
     prelude::*,
 };
-use dioxus_desktop::{tao, LogicalSize};
-use log::{info, LevelFilter};
+use dioxus_desktop::{LogicalSize, tao};
+use log::{LevelFilter, info};
 use log4rs::{
     append::{
         console::{ConsoleAppender, Target},

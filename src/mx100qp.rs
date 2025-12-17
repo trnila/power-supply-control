@@ -353,13 +353,12 @@ fn find_usb(config: &PowerSupplyConfig) -> Option<String> {
     let ports: Vec<serialport::SerialPortInfo> =
         serialport::available_ports().expect("No ports found!");
     ports.iter().find_map(|p| {
-        if let serialport::SerialPortType::UsbPort(usbinfo) = &p.port_type {
-            if config.pid == usbinfo.pid
-                && config.vid == usbinfo.vid
-                && config.serial_number == usbinfo.serial_number
-            {
-                return Some(p.port_name.clone());
-            }
+        if let serialport::SerialPortType::UsbPort(usbinfo) = &p.port_type
+            && config.pid == usbinfo.pid
+            && config.vid == usbinfo.vid
+            && config.serial_number == usbinfo.serial_number
+        {
+            return Some(p.port_name.clone());
         }
         None
     })

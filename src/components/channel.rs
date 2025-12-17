@@ -6,7 +6,7 @@ use crate::{
         power_supply::{ChannelSelection, PowerSupplyAction},
     },
     config::ChannelConfig,
-    mx100qp::{Channel, VoltageTrackingState, VRANGES},
+    mx100qp::{Channel, VRANGES, VoltageTrackingState},
 };
 use dioxus::prelude::*;
 

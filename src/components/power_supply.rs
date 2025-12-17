@@ -5,11 +5,11 @@ use crate::components::edit_mode::EditMode;
 use crate::components::modal::ModalComponent;
 use crate::config::AppConfig;
 use crate::config::MultiOn;
-use crate::mx100qp::auto_vrange;
 use crate::mx100qp::Channel;
 use crate::mx100qp::MultiChannelOn;
 use crate::mx100qp::Mx100qp;
 use crate::mx100qp::VoltageTracking;
+use crate::mx100qp::auto_vrange;
 use dioxus::prelude::*;
 use futures::StreamExt;
 use log::{error, info};
@@ -68,11 +68,11 @@ async fn handle_action(
             let channel_conf = &mut conf.power_supply_channel(id, ch);
             channel_conf.voltage = new_voltage;
 
-            if channel_conf.auto_vrange {
-                if let Some(vrange) = auto_vrange(ch, channel_conf.voltage, channel_conf.current) {
-                    channel_conf.vrange = vrange;
-                    port.set_vrange(ch, channel_conf.vrange).await.unwrap();
-                }
+            if channel_conf.auto_vrange
+                && let Some(vrange) = auto_vrange(ch, channel_conf.voltage, channel_conf.current)
+            {
+                channel_conf.vrange = vrange;
+                port.set_vrange(ch, channel_conf.vrange).await.unwrap();
             }
 
             conf.save();
@@ -83,11 +83,11 @@ async fn handle_action(
             let channel_conf = &mut conf.power_supply_channel(id, ch);
             channel_conf.current = new_current;
 
-            if channel_conf.auto_vrange {
-                if let Some(vrange) = auto_vrange(ch, channel_conf.voltage, channel_conf.current) {
-                    channel_conf.vrange = vrange;
-                    port.set_vrange(ch, channel_conf.vrange).await.unwrap();
-                }
+            if channel_conf.auto_vrange
+                && let Some(vrange) = auto_vrange(ch, channel_conf.voltage, channel_conf.current)
+            {
+                channel_conf.vrange = vrange;
+                port.set_vrange(ch, channel_conf.vrange).await.unwrap();
             }
 
             conf.save();

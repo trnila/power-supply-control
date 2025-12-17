@@ -1,10 +1,10 @@
 use dioxus::prelude::*;
 
 fn parse_input(s: &str) -> Option<f32> {
-    if !s.is_empty() {
-        if let Ok(val) = s.parse() {
-            return Some(val);
-        }
+    if !s.is_empty()
+        && let Ok(val) = s.parse()
+    {
+        return Some(val);
     }
     None
 }
