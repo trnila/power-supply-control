@@ -36,7 +36,7 @@ int-enum = "1.2.0"
 bitflags = "2.10.0"
 
 [build-dependencies]
-vergen-gitcl = "1.0.8"
+vergen-gitcl = "9.0.0"
 anyhow = "1.0.100"
 image = "0.25.9"
 
