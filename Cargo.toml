@@ -13,7 +13,7 @@ dioxus = { version = "0.6.3", features = ["desktop"] }
 
 # Debug
 tracing = "0.1.43"
-dioxus-logger = "0.6.2"
+dioxus-logger = "0.7.0"
 serialport = "4.8.1"
 serde_derive = "1.0.228"
 serde = { version = "1.0.228", features = ["derive"] }
