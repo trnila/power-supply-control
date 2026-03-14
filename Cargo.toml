@@ -26,7 +26,7 @@ futures = "0.3.31"
 bytes = "1.11.0"
 manganis = "0.6.2"
 dirs = "6.0.0"
-dioxus-desktop = "0.6.3"
+dioxus-desktop = "0.7.0"
 log4rs = "1.4.0"
 log-panics = { version = "2", features = ["with-backtrace"]}
 anyhow = "1.0.100"
