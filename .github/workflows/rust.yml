@@ -21,7 +21,7 @@ jobs:
         name: power_supply_control_linux
         path: target/release/power-supply-control
         if-no-files-found: error
-    - uses: softprops/action-gh-release@v2
+    - uses: softprops/action-gh-release@v3
       if: startsWith(github.ref, 'refs/tags/')
       with:
         files: target/release/power-supply-control
@@ -39,7 +39,7 @@ jobs:
         name: power_supply_control_win64
         path: target/release/power-supply-control.exe
         if-no-files-found: error
-    - uses: softprops/action-gh-release@v2
+    - uses: softprops/action-gh-release@v3
       if: startsWith(github.ref, 'refs/tags/')
       with:
         files: target/release/power-supply-control.exe
