@@ -24,7 +24,7 @@ tokio-serial = "5.4.5"
 tokio-util = { version = "0.7.17", features = ["codec"] }
 futures = "0.3.31"
 bytes = "1.11.0"
-manganis = "0.6.2"
+manganis = "0.7.0"
 dirs = "6.0.0"
 dioxus-desktop = "0.6.3"
 log4rs = "1.4.0"
