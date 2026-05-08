@@ -1170,9 +1170,9 @@ dependencies = [
 
 [[package]]
 name = "dioxus-cli-config"
-version = "0.7.7"
+version = "0.7.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5ef4c22f0a239158f77966d7e7d39b637a10cb374cbd85f881704a336fd3f5c8"
+checksum = "c000f584ddf608e2b272b3074bf11512a474eeeb2eb85a1915f276ce5c4a8615"
 
 [[package]]
 name = "dioxus-config-macro"
@@ -1463,11 +1463,11 @@ dependencies = [
 
 [[package]]
 name = "dioxus-logger"
-version = "0.7.7"
+version = "0.7.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "32720fddff9b73266502b15b2c36b139bd8fbfd5b85b67d29ba06d5b4ed60669"
+checksum = "a28ccdfe36d2cb830a2784e40f7e6f7199805a2c6da99bd65b1ca308f11aed28"
 dependencies = [
- "dioxus-cli-config 0.7.7",
+ "dioxus-cli-config 0.7.9",
  "tracing",
  "tracing-subscriber",
  "tracing-wasm",
@@ -4180,7 +4180,7 @@ dependencies = [
  "bytes",
  "dioxus",
  "dioxus-desktop",
- "dioxus-logger 0.7.7",
+ "dioxus-logger 0.7.9",
  "dirs",
  "futures",
  "futures-util",
